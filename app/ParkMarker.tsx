@@ -1,58 +1,50 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Pressable } from 'react-native';
-import * as Location from "expo-location";
-import { Marker } from 'react-native-maps';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 
-interface ButtonProps {
-  onPress: () => void;
-  title?: string;
-}
+const ParkMarker = () => {
+  const router = useRouter();
 
-export default function Button(props: ButtonProps) {
-  const [location, setLocation] = useState<Location.LocationObject | null>(null);
-  
-  useEffect(() => {
-    (async () => {
-      let location = await Location.getCurrentPositionAsync({});
-      setLocation(location);
-    })();
-  }, []);
+  const handleSaveLocation = async () => {
+    // Obtener la ubicación actual
+    const location = await Location.getCurrentPositionAsync({});
+    
+    // Guardar la ubicación y volver al mapa
+    Alert.alert('Ubicación guardada', 'La ubicación de tu coche ha sido guardada');
+    router.push({
+      pathname: '/',
+      params: { carLatitude: location.coords.latitude, carLongitude: location.coords.longitude }
+    });
+  };
 
-  if (!location) {
-    return null;
-  }
-
-  const { onPress, title = 'Where is my car?' } = props;
-  
   return (
-    <Pressable style={styles.button} onPress={onPress}>
-      <Marker
-        coordinate={{
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        }}
-        image={require('../assets/images/LocationMarker.png')} 
-      />
-    </Pressable>
+    <View style={styles.container}>
+      <TouchableOpacity style={styles.roundButton} onPress={handleSaveLocation}>
+        <Text style={styles.buttonText}>Guardar ubicación de mi coche</Text>
+      </TouchableOpacity>
+    </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  button: {
-    alignItems: 'center',
+  container: {
+    flex: 1,
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 4,
-    elevation: 3,
-    backgroundColor: '#FFF',
-    borderColor: 'black',
+    alignItems: 'center',
   },
-  text: {
-    fontSize: 16,
-    lineHeight: 21,
+  roundButton: {
+    backgroundColor: '#CEECF5', // Color de fondo
+    borderRadius: 30, // Hace que los bordes sean redondeados
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    elevation: 5, // Sombra en Android
+  },
+  buttonText: {
+    color: 'black', // Color del texto
     fontWeight: 'bold',
-    letterSpacing: 0.25,
-    color: 'white',
+    fontSize: 18,
   },
 });
+
+export default ParkMarker;
