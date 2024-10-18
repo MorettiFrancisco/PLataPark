@@ -1,28 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
-import { StyleSheet, View } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { StyleSheet, View, TouchableOpacity, Image } from 'react-native';
 import * as Location from 'expo-location';
-import Button from './ParkMarker';
-
+import { router, useLocalSearchParams } from 'expo-router';
 
 export default function App() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
+  const [carLocation, setCarLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const { carLatitude, carLongitude } = useLocalSearchParams();
 
   useEffect(() => {
     (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Permission to access location was denied');
+        return;
+      }
       let location = await Location.getCurrentPositionAsync({});
       setLocation(location);
     })();
   }, []);
 
+  useEffect(() => {
+    if (carLatitude && carLongitude) {
+      // Si recibimos los parámetros, guardamos la ubicación del coche
+      setCarLocation({ latitude: parseFloat(carLatitude as string), longitude: parseFloat(carLongitude as string) });
+    }
+  }, [carLatitude, carLongitude]);
+
   if (!location) {
-    return null; 
+    return null;
   }
-  const handleButtonPress = () => {
-    // Aquí puedes agregar lógica adicional si es necesario,
-    // por ejemplo, manejar la reubicación de un marcador.
-    console.log('Botón presionado');
-  };
 
   return (
     <View style={styles.container}>
@@ -33,11 +41,30 @@ export default function App() {
         initialRegion={{
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
         }}
-      />
-      <Button onPress={handleButtonPress} title="Where is my car?" />
+      >
+        {carLocation && (
+          <Marker
+            coordinate={{
+              latitude: carLocation.latitude,
+              longitude: carLocation.longitude,
+            }}
+            title="Mi coche"
+          />
+        )}
+      </MapView>
+
+      <TouchableOpacity
+        style={styles.floatingButton}
+        onPress={() => router.push('/ParkMarker')}
+      >
+        <Image
+          source={require('../assets/images/LocationMarker.png')} // Icono para el botón
+          style={styles.buttonImage}
+        />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -49,5 +76,18 @@ const styles = StyleSheet.create({
   map: {
     width: '100%',
     height: '100%',
+  },
+  floatingButton: {
+    position: 'absolute',
+    bottom: 30,
+    left: 20,
+    backgroundColor: '#CEECF5',
+    borderRadius: 40,
+    padding: 15,
+    elevation: 5,
+  },
+  buttonImage: {
+    width: 40,
+    height: 40,
   },
 });
