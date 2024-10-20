@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
-import { StyleSheet, View } from 'react-native';
+import { Alert, Button, Linking, StyleSheet, View } from 'react-native';
 import * as Location from 'expo-location';
+import { openSettings } from 'expo-linking';
+
 
 export default function App() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
@@ -13,8 +15,23 @@ export default function App() {
     })();
   }, []);
 
+  const handleOpenLink=async (url:string)=>{
+    try{
+      const response=await Linking.openURL(url);
+    }catch(e){
+      console.info("error abriendo link", url);
+      throw e;
+    }
+  }
+
   if (!location) {
-    return null; 
+    return (
+    <View>
+      <Button title='SEM' onPress={()=>handleOpenLink('https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata')} />
+      <Button title='Activa la ubicacion' onPress={()=>openSettings()} />
+
+    </View>
+    ); 
   }
 
   return (
@@ -28,8 +45,9 @@ export default function App() {
           longitude: location.coords.longitude,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
-        }}
-      />
+        }}/>
+      <Button title='Push' onPress={()=>Alert.alert("Salame")}/>
+      
     </View>
   );
 }
