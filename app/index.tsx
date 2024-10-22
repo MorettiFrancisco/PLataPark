@@ -1,25 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { StyleSheet, View, TouchableOpacity, Image } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Image, Alert } from 'react-native';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 
 export default function App() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [carLocation, setCarLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [permissionGranted, setPermissionGranted] = useState<boolean>(false);
   const { carLatitude, carLongitude } = useLocalSearchParams();
 
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('Permission to access location was denied');
-        return;
+      if (status === 'granted') {
+        setPermissionGranted(true);
+      } else {
+        Alert.alert('Permiso denegado', 'Necesitas conceder permisos de localización para usar esta funcionalidad.');
+        setPermissionGranted(false);
       }
-      let location = await Location.getCurrentPositionAsync({});
-      setLocation(location);
     })();
   }, []);
+
+  // Observa los cambios en los permisos y actualiza la ubicación dinámicamente
+  useEffect(() => {
+    let locationSubscription: Location.LocationSubscription | null = null;
+
+    if (permissionGranted) {
+      (async () => {
+        let location = await Location.getCurrentPositionAsync({});
+        setLocation(location);
+
+        // Suscribimos para monitorear actualizaciones en la posición
+        locationSubscription = await Location.watchPositionAsync(
+          { accuracy: Location.Accuracy.High, distanceInterval: 1 },
+          (newLocation) => {
+            setLocation(newLocation);
+          }
+        );
+      })();
+    }
+
+    // Limpiamos la suscripción cuando se desmonte el componente
+    return () => {
+      if (locationSubscription) {
+        locationSubscription.remove();
+      }
+    };
+  }, [permissionGranted]);
 
   useEffect(() => {
     if (carLatitude && carLongitude) {
