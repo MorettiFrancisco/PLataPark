@@ -82,7 +82,7 @@ export default function App() {
 
       <TouchableOpacity
         style={styles.floatingButton}
-        onPress={() => router.push('/ParkMarker')}
+        onPress={() => router.push({ pathname: '/ParkMarker' })}
       >
         <Image
           source={require('../assets/images/LocationMarker.png')} // Icono para el botón
