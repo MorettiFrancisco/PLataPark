@@ -22,7 +22,6 @@ export default function App() {
     })();
   }, []);
 
-  // Observa los cambios en los permisos y actualiza la ubicación dinámicamente
   useEffect(() => {
     let locationSubscription: Location.LocationSubscription | null = null;
 
@@ -31,7 +30,6 @@ export default function App() {
         let location = await Location.getCurrentPositionAsync({});
         setLocation(location);
 
-        // Suscribimos para monitorear actualizaciones en la posición
         locationSubscription = await Location.watchPositionAsync(
           { accuracy: Location.Accuracy.High, distanceInterval: 1 },
           (newLocation) => {
@@ -41,7 +39,6 @@ export default function App() {
       })();
     }
 
-    // Limpiamos la suscripción cuando se desmonte el componente
     return () => {
       if (locationSubscription) {
         locationSubscription.remove();
@@ -51,7 +48,6 @@ export default function App() {
 
   useEffect(() => {
     if (carLatitude && carLongitude) {
-      // Si recibimos los parámetros, guardamos la ubicación del coche
       setCarLocation({ latitude: parseFloat(carLatitude as string), longitude: parseFloat(carLongitude as string) });
     }
   }, [carLatitude, carLongitude]);
