@@ -141,13 +141,12 @@ export default function App() {
 
       </MapView>
 
-      {/* Botón flotante para marcar la ubicación del coche */}
       <TouchableOpacity
         style={styles.floatingButton}
-        onPress={() => navigation.navigate('ParkMarker' as never)} // Navegar a la pantalla 'ParkMarker'
+        onPress={() => navigation.navigate('ParkMarker' as never)} 
       >
         <Image
-          source={require('../assets/images/LocationMarker.png')} // Icono para el botón
+          source={require('../assets/images/LocationMarker.png')} 
           style={styles.buttonImage}
         />
       </TouchableOpacity>
