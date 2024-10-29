@@ -3,6 +3,14 @@ import MapView, { Marker, PROVIDER_GOOGLE, Polygon } from 'react-native-maps';
 import { StyleSheet, View, TouchableOpacity, Image, Alert } from 'react-native';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native'; 
+import zonas from '../constants/ParkingZones/zonas';
+
+interface Zona {
+  coordenadas: { latitude: number; longitude: number }[];
+  color: string;
+}
+
+
 
 export default function App() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
@@ -63,7 +71,6 @@ export default function App() {
           longitudeDelta: 0.01,
         }}
       >
-
         {carLocation && (
           <Marker
             coordinate={{
@@ -74,71 +81,15 @@ export default function App() {
           />
         )}
 
-        {/* Zona Verde (Lunes a Viernes de 7 a 20 hs, Sábados de 9 a 20 hs) */}
-        <Polygon
-          coordinates={[
-            { latitude: -34.9205, longitude: -57.9533 }, // Coordenadas aproximadas
-            { latitude: -34.9215, longitude: -57.9533 },
-            { latitude: -34.9215, longitude: -57.9523 },
-            { latitude: -34.9205, longitude: -57.9523 },
-          ]}
-          strokeColor="#00FF00" // Verde
-          fillColor="rgba(0, 255, 0, 0.3)"
-          strokeWidth={2}
-        />
-
-        {/* Zona Azul (Lunes a Sábado de 9 a 20 hs) */}
-        <Polygon
-          coordinates={[
-            { latitude: -34.9208, longitude: -57.9528 },
-            { latitude: -34.9218, longitude: -57.9528 },
-            { latitude: -34.9218, longitude: -57.9518 },
-            { latitude: -34.9208, longitude: -57.9518 },
-          ]}
-          strokeColor="#0000FF" // Azul
-          fillColor="rgba(0, 0, 255, 0.3)"
-          strokeWidth={2}
-        />
-
-        {/* Zona Magenta (Lunes a Viernes de 7 a 14 hs) */}
-        <Polygon
-          coordinates={[
-            { latitude: -34.9210, longitude: -57.9530 },
-            { latitude: -34.9220, longitude: -57.9530 },
-            { latitude: -34.9220, longitude: -57.9520 },
-            { latitude: -34.9210, longitude: -57.9520 },
-          ]}
-          strokeColor="#FF00FF" // Magenta
-          fillColor="rgba(255, 0, 255, 0.3)"
-          strokeWidth={2}
-        />
-
-        {/* Zona Amarilla (Lunes a Viernes de 7 a 20 hs) */}
-        <Polygon
-          coordinates={[
-            { latitude: -34.9207, longitude: -57.9532 },
-            { latitude: -34.9217, longitude: -57.9532 },
-            { latitude: -34.9217, longitude: -57.9522 },
-            { latitude: -34.9207, longitude: -57.9522 },
-          ]}
-          strokeColor="#FFFF00" // Amarillo
-          fillColor="rgba(255, 255, 0, 0.3)"
-          strokeWidth={2}
-        />
-
-        {/* Zona donde está prohibido estacionar */}
-        <Polygon
-          coordinates={[
-            { latitude: -34.9211, longitude: -57.9531 },
-            { latitude: -34.9221, longitude: -57.9531 },
-            { latitude: -34.9221, longitude: -57.9521 },
-            { latitude: -34.9211, longitude: -57.9521 },
-          ]}
-          strokeColor="#000000" // Negro
-          fillColor="rgba(0, 0, 0, 0.3)"
-          strokeWidth={2}
-        />
-
+        {zonas.map((zona: Zona, index: number) => (
+          <Polygon
+            key={index}
+            coordinates={zona.coordenadas}
+            strokeColor={zona.color}
+            fillColor={zona.color}
+            strokeWidth={2}
+          />
+        ))}
       </MapView>
 
       <TouchableOpacity
