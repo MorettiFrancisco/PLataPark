@@ -21,7 +21,7 @@ const ParkMarker = () => {
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.roundButton} onPress={handleSaveLocation}>
-        <Text style={styles.buttonText}>Guardar ubicación de mi coche</Text>
+        <Text style={styles.buttonText}>Guardar ubicación de mi Auto</Text>
       </TouchableOpacity>
     </View>
   );
