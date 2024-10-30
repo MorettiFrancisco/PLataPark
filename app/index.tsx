@@ -4,7 +4,6 @@ import { Alert, Button, Linking, StyleSheet, View } from 'react-native';
 import * as Location from 'expo-location';
 import { openSettings } from 'expo-linking';
 
-
 export default function App() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
 
@@ -15,12 +14,13 @@ export default function App() {
     })();
   }, []);
 
-  const handleOpenLink=async (url:string,alternativo:string)=>{
+  const handleOpenLink= async(url:string,alternativo:string)=>{
     try{
-      const response=await Linking.openURL(url);
+     await Linking.openURL(url);
+      
     }catch(e){
       console.info("error abriendo link", url);
-      const response=await Linking.openURL(alternativo);
+      await Linking.openURL(alternativo);
       throw e;
     }
   }
@@ -28,7 +28,7 @@ export default function App() {
   if (!location) {
     return (
     <View>
-      <Button title='SEM' onPress={()=>handleOpenLink('semlaplata://','https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata&hl=es_AR')} />
+      <Button title='SEM' onPress={()=>handleOpenLink('Sem-LaPlata://','https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata&hl=es_AR')} />
       <Button title='Activa la ubicacion' onPress={()=>openSettings()} />
 
     </View>
@@ -37,6 +37,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
+      <Button title='SEM' onPress={()=>handleOpenLink('semlaplata','https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata')} />
       <MapView
         style={styles.map}
         provider={PROVIDER_GOOGLE}
@@ -47,7 +48,6 @@ export default function App() {
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }}/>
-      <Button title='SEM' onPress={()=>handleOpenLink('semlaplata','https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata')} />
       
     </View>
   );
