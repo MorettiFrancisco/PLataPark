@@ -15,11 +15,12 @@ export default function App() {
     })();
   }, []);
 
-  const handleOpenLink=async (url:string)=>{
+  const handleOpenLink=async (url:string,alternativo:string)=>{
     try{
       const response=await Linking.openURL(url);
     }catch(e){
       console.info("error abriendo link", url);
+      const response=await Linking.openURL(alternativo);
       throw e;
     }
   }
@@ -27,7 +28,7 @@ export default function App() {
   if (!location) {
     return (
     <View>
-      <Button title='SEM' onPress={()=>handleOpenLink('https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata')} />
+      <Button title='SEM' onPress={()=>handleOpenLink('semlaplata://','https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata&hl=es_AR')} />
       <Button title='Activa la ubicacion' onPress={()=>openSettings()} />
 
     </View>
@@ -46,7 +47,7 @@ export default function App() {
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }}/>
-      <Button title='Push' onPress={()=>Alert.alert("Salame")}/>
+      <Button title='SEM' onPress={()=>handleOpenLink('semlaplata','https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata')} />
       
     </View>
   );
