@@ -1,27 +1,29 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { RootStackParamList } from '../components/routes/types'; 
 
 const ParkMarker = () => {
-  const router = useRouter();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const handleSaveLocation = async () => {
-    // Obtener la ubicación actual
-    const location = await Location.getCurrentPositionAsync({});
-    
-    // Guardar la ubicación y volver al mapa
-    Alert.alert('Ubicación guardada', 'La ubicación de tu coche ha sido guardada');
-    router.push({
-      pathname: '/',
-      params: { carLatitude: location.coords.latitude, carLongitude: location.coords.longitude }
-    });
+    try {
+      const location = await Location.getCurrentPositionAsync({});
+      Alert.alert('Ubicación guardada', 'La ubicación de tu coche ha sido guardada');
+      navigation.navigate('index', { 
+        carLatitude: location.coords.latitude, 
+        carLongitude: location.coords.longitude 
+      });
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo obtener la ubicación.');
+    }
   };
 
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.roundButton} onPress={handleSaveLocation}>
-        <Text style={styles.buttonText}>Guardar ubicación de mi Auto</Text>
+        <Text style={styles.buttonText}>Guardar ubicación de mi coche</Text>
       </TouchableOpacity>
     </View>
   );
@@ -34,14 +36,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   roundButton: {
-    backgroundColor: '#CEECF5', // Color de fondo
-    borderRadius: 30, // Hace que los bordes sean redondeados
+    backgroundColor: '#CEECF5',
+    borderRadius: 30,
     paddingVertical: 15,
     paddingHorizontal: 30,
-    elevation: 5, // Sombra en Android
+    elevation: 5,
   },
   buttonText: {
-    color: 'black', // Color del texto
+    color: 'black',
     fontWeight: 'bold',
     fontSize: 18,
   },
