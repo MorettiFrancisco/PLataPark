@@ -52,12 +52,60 @@ interface Zona {
         { latitude: -34.91856797272112, longitude: -57.94920342681753 },
         { latitude: -34.918163837412045, longitude: -57.949729669197225 },
     ],
+    },
+    {
+      color: 'rgba(255, 0, 255, 0.3)', // Violeta/Rosa
+      horario: "Lunes a viernes de 7 a 14 hs",
+      coordenadas: [
+        { latitude: -34.917370790632965, longitude: -57.962482878432226 },
+        { latitude: -34.91818046565397, longitude: -57.96150293546498 },
+        { latitude: -34.91903506891444, longitude: -57.962381237350954 },
+        { latitude: -34.92124654432575, longitude: -57.95939593413739 },
+        { latitude: -34.920368525521845, longitude: -57.9584181142875 },
+        { latitude: -34.92143019917384, longitude: -57.956993307238776 },
+        { latitude: -34.91944854108787, longitude: -57.954772690745486 },
+        { latitude: -34.91143064805844, longitude: -57.955341209595574 },
+        { latitude: -34.911354359751435, longitude: -57.95567837221296 },
+        { latitude: -34.911306673787244, longitude: -57.95577358672212 },
+        { latitude: -34.91144441270781, longitude: -57.955974452788865 },
+        { latitude: -34.91584480210354, longitude: -57.960826457576545 },
+        { latitude: -34.91573451252228, longitude: -57.960987771696125 },
+        { latitude: -34.91572819475316, longitude: -57.96208243719323 },
+        { latitude: -34.91587364025339, longitude: -57.962199005283196 },
+        { latitude: -34.91676149131975, longitude: -57.96216734435244 },
+        { latitude: -34.916947329613805, longitude: -57.96195502909286 },
+        { latitude: -34.917370790632965, longitude: -57.962482878432226 }
+      ],
+    },
+    {
+      color: 'rgba(135, 206, 250, 0.6)', // Celeste
+      horario: "Lunes a sábados de 9 a 20 hs",
+      coordenadas: [
+        { latitude: -34.92905411123089, longitude: -57.944159736202465 },
+        { latitude: -34.928232954703944, longitude: -57.94325824563445 },
+        { latitude: -34.929013262223194, longitude: -57.94220559629985 },
+        { latitude: -34.928851965755015, longitude: -57.94202446983985 },
+        { latitude: -34.9280611907195, longitude: -57.943054263003106 },
+        { latitude: -34.927195608500945, longitude: -57.942153333814446 },
+        { latitude: -34.92132858705787, longitude: -57.95014275334022 },
+        { latitude: -34.92132948127231, longitude: -57.95106045195564 },
+        { latitude: -34.921793323214835, longitude: -57.951593901081985 },
+        { latitude: -34.92141557648307, longitude: -57.952186523517156 },
+        { latitude: -34.92149322402409, longitude: -57.95226350099763 },
+        { latitude: -34.92188491134268, longitude: -57.9517515964002 },
+        { latitude: -34.92276686200659, longitude: -57.95258543746563 },
+        { latitude: -34.925967834433706, longitude: -57.948298627834575 },
+        { latitude: -34.92590420787152, longitude: -57.94727802295098 },
+        { latitude: -34.92605048259924, longitude: -57.947061464032316 },
+        { latitude: -34.92692628965063, longitude: -57.94704220762817 },
+        { latitude: -34.92905411123089, longitude: -57.944159736202465 }
+      ],
     },    
     {
-        color: 'rgba(0, 255, 0, 0.3)', // Verde
+        color: 'rgba(0, 255, 0, 0.3)', 
         horario: "Sábados de 9 a 20 hs",
         coordenadas: [
-          // Primer polígono
+          
           { latitude: -34.916843721308915, longitude: -57.947268292565326 },
           { latitude: -34.920471213479935, longitude: -57.9424394954889 },
           { latitude: -34.92020349971639, longitude: -57.94213514391909 },
@@ -69,7 +117,7 @@ interface Zona {
         color: 'rgba(0, 255, 0, 0.3)', // Verde
         horario: "Sábados de 9 a 20 hs",
         coordenadas: [
-          // Segundo polígono
+          
           { latitude: -34.909949139575616, longitude: -57.94897135977557 },
           { latitude: -34.910658776684095, longitude: -57.95443279017658 },
           { latitude: -34.9115404410996, longitude: -57.95543359058772 },
@@ -83,7 +131,7 @@ interface Zona {
         color: 'rgba(0, 255, 0, 0.3)', // Verde
         horario: "Sábados de 9 a 20 hs",
         coordenadas: [
-          // Tercer polígono
+          
           { latitude: -34.906816589077785, longitude: -57.94909630931021 },
           { latitude: -34.91048769857261, longitude: -57.94888849333297 },
           { latitude: -34.91046682666385, longitude: -57.94868900541239 },
@@ -113,54 +161,7 @@ interface Zona {
           { latitude: -34.91642766113773, longitude: -57.95006217882495 }
         ],
       },
-      {
-        color: 'rgba(255, 0, 255, 0.3)', // Violeta/Rosa
-        horario: "Lunes a viernes de 7 a 14 hs",
-        coordenadas: [
-          { latitude: -34.917370790632965, longitude: -57.962482878432226 },
-          { latitude: -34.91818046565397, longitude: -57.96150293546498 },
-          { latitude: -34.91903506891444, longitude: -57.962381237350954 },
-          { latitude: -34.92124654432575, longitude: -57.95939593413739 },
-          { latitude: -34.920368525521845, longitude: -57.9584181142875 },
-          { latitude: -34.92143019917384, longitude: -57.956993307238776 },
-          { latitude: -34.91944854108787, longitude: -57.954772690745486 },
-          { latitude: -34.91143064805844, longitude: -57.955341209595574 },
-          { latitude: -34.911354359751435, longitude: -57.95567837221296 },
-          { latitude: -34.911306673787244, longitude: -57.95577358672212 },
-          { latitude: -34.91144441270781, longitude: -57.955974452788865 },
-          { latitude: -34.91584480210354, longitude: -57.960826457576545 },
-          { latitude: -34.91573451252228, longitude: -57.960987771696125 },
-          { latitude: -34.91572819475316, longitude: -57.96208243719323 },
-          { latitude: -34.91587364025339, longitude: -57.962199005283196 },
-          { latitude: -34.91676149131975, longitude: -57.96216734435244 },
-          { latitude: -34.916947329613805, longitude: -57.96195502909286 },
-          { latitude: -34.917370790632965, longitude: -57.962482878432226 }
-        ],
-      },
-      {
-        color: 'rgba(135, 206, 250, 0.6)', // Celeste
-        horario: "Lunes a sábados de 9 a 20 hs",
-        coordenadas: [
-          { latitude: -34.92905411123089, longitude: -57.944159736202465 },
-          { latitude: -34.928232954703944, longitude: -57.94325824563445 },
-          { latitude: -34.929013262223194, longitude: -57.94220559629985 },
-          { latitude: -34.928851965755015, longitude: -57.94202446983985 },
-          { latitude: -34.9280611907195, longitude: -57.943054263003106 },
-          { latitude: -34.927195608500945, longitude: -57.942153333814446 },
-          { latitude: -34.92132858705787, longitude: -57.95014275334022 },
-          { latitude: -34.92132948127231, longitude: -57.95106045195564 },
-          { latitude: -34.921793323214835, longitude: -57.951593901081985 },
-          { latitude: -34.92141557648307, longitude: -57.952186523517156 },
-          { latitude: -34.92149322402409, longitude: -57.95226350099763 },
-          { latitude: -34.92188491134268, longitude: -57.9517515964002 },
-          { latitude: -34.92276686200659, longitude: -57.95258543746563 },
-          { latitude: -34.925967834433706, longitude: -57.948298627834575 },
-          { latitude: -34.92590420787152, longitude: -57.94727802295098 },
-          { latitude: -34.92605048259924, longitude: -57.947061464032316 },
-          { latitude: -34.92692628965063, longitude: -57.94704220762817 },
-          { latitude: -34.92905411123089, longitude: -57.944159736202465 }
-        ],
-      }                                
+                                      
   ];
   
   export default zonas;
