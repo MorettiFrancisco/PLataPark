@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import MapView, { Marker, PROVIDER_GOOGLE, Polygon } from 'react-native-maps';
-import { StyleSheet, View, TouchableOpacity, Image, Alert } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Image, Alert, Text } from 'react-native';
 import * as Location from 'expo-location';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import zonas from '../constants/ParkingZones/zonas';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Text } from 'react-native';
 
 interface Zona {
   coordenadas: { latitude: number; longitude: number }[];
   color: string;
-  horario: string; 
+  horario: string;
 }
 
 type RouteParams = {
@@ -18,35 +17,39 @@ type RouteParams = {
   carLongitude?: number;
 };
 
+// Agrupamos las zonas por horario
+const zonasPorHorario: { [horario: string]: Zona[] } = zonas.reduce((acc, zona) => {
+  acc[zona.horario] = acc[zona.horario] ? [...acc[zona.horario], zona] : [zona];
+  return acc;
+}, {} as { [horario: string]: Zona[] });
+
 export default function App() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [carLocation, setCarLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [permissionGranted, setPermissionGranted] = useState<boolean>(false);
-  const [menuVisible, setMenuVisible] = useState<boolean>(false); // Estado para controlar la visibilidad del menú
-  const navigation = useNavigation(); 
+  const [menuVisible, setMenuVisible] = useState<boolean>(false);
+  const [visibilidadHorarios, setVisibilidadHorarios] = useState<{ [horario: string]: boolean }>({});
+  const navigation = useNavigation();
   const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
 
-  const [visibleZonas, setVisibleZonas] = useState(zonas.map(() => true));
-
-  const toggleZonaVisibility = (index: number) => {
-    setVisibleZonas((prev) => {
-      const newVisibility = [...prev];
-      newVisibility[index] = !newVisibility[index];
-      return newVisibility;
-    });
+  const toggleHorarioVisibility = (horario: string) => {
+    setVisibilidadHorarios((prevState) => ({
+      ...prevState,
+      [horario]: !prevState[horario],
+    }));
   };
 
   const renderMenu = () => (
     <View style={styles.menu}>
-      {zonas.map((zona, index) => (
-        <TouchableOpacity key={index} onPress={() => toggleZonaVisibility(index)} style={styles.menuItem}>
-          <Icon 
-            name={visibleZonas[index] ? 'checkbox-marked' : 'checkbox-blank-outline'} 
-            size={20} 
-            color="#000" 
+      {Object.keys(zonasPorHorario).map((horario) => (
+        <TouchableOpacity key={horario} onPress={() => toggleHorarioVisibility(horario)} style={styles.menuItem}>
+          <Icon
+            name={visibilidadHorarios[horario] ? 'checkbox-marked' : 'checkbox-blank-outline'}
+            size={20}
+            color="#000"
             style={styles.checkbox}
           />
-          <Text style={styles.menuText}>{zona.horario}</Text>
+          <Text style={styles.menuText}>{horario}</Text>
         </TouchableOpacity>
       ))}
     </View>
@@ -139,35 +142,32 @@ export default function App() {
           />
         )}
 
-        {zonas.map((zona: Zona, index: number) => (
-          visibleZonas[index] && (
+        {/* Renderiza los polígonos por horario, si están visibles */}
+        {Object.entries(zonasPorHorario).map(([horario, zonas]) =>
+          visibilidadHorarios[horario] &&
+          zonas.map((zona, index) => (
             <Polygon
-              key={index}
+              key={`${horario}-${index}`}
               coordinates={zona.coordenadas}
               strokeColor={zona.color}
               fillColor={zona.color}
               strokeWidth={2}
             />
-          )
-        ))}
+          ))
+        )}
       </MapView>
-      
-    
+
       <TouchableOpacity style={styles.menuToggleButton} onPress={() => setMenuVisible(!menuVisible)}>
-        <Text style={styles.menuToggleButtonText}>{menuVisible ? 'Cerrar Menú' : 'Menú de zonas pagas'}</Text>
+        <Text style={styles.menuToggleButtonText}>{menuVisible ? 'Cerrar Menú' : 'Menú de zonas'}</Text>
       </TouchableOpacity>
 
-      
       {menuVisible && renderMenu()}
 
       <TouchableOpacity
         style={styles.floatingButton}
-        onPress={() => navigation.navigate('ParkMarker' as never)} 
+        onPress={() => navigation.navigate('ParkMarker' as never)}
       >
-        <Image
-          source={require('../assets/images/LocationMarker.png')} 
-          style={styles.buttonImage}
-        />
+        <Image source={require('../assets/images/LocationMarker.png')} style={styles.buttonImage} />
       </TouchableOpacity>
     </View>
   );
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   },
   checkbox: {
     marginRight: 10,
-    fontSize: 20, 
+    fontSize: 20,
   },
   menuText: {
     fontSize: 16,
