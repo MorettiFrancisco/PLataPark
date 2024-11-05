@@ -28,7 +28,7 @@ export default function App() {
   if (!location) {
     return (
     <View>
-      <Button title='SEM' onPress={()=>handleOpenLink('ar.edu.unlp.semmobile.activity.MainActivity','https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata&hl=es_AR')} />
+      <Button title='SEM' onPress={()=>handleOpenLink('uber://','https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata&hl=es_AR')} />
       <Button title='Activa la ubicacion' onPress={()=>openSettings()} />
 
     </View>
@@ -37,7 +37,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Button title='SEM' onPress={()=>handleOpenLink('https://sem.dat.cespi.unlp.edu.ar/#/home','https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata')} />
+      <Button title='SEM' onPress={()=>handleOpenLink('uber://','https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata')} />
       <MapView
         style={styles.map}
         provider={PROVIDER_GOOGLE}
