@@ -5,12 +5,17 @@ import * as Location from 'expo-location';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import zonas from '../constants/ParkingZones/zonas';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { isInZone } from './functions/parkingUtils';
+
 
 interface Zona {
-  coordenadas: { latitude: number; longitude: number }[];
   color: string;
   horario: string;
-}
+  dias: string[];
+  horarioInicio: string;
+  horarioFin: string;
+  coordenadas: { latitude: number; longitude: number }[];
+} 
 
 type RouteParams = {
   carLatitude?: number;
@@ -133,15 +138,30 @@ export default function App() {
         }
       >
         {carLocation && (
-          <Marker
-            coordinate={{
-              latitude: carLocation.latitude,
-              longitude: carLocation.longitude,
-            }}
-            title="Mi coche"
-          />
-        )}
+      <Marker
+        coordinate={{
+          latitude: carLocation.latitude,
+          longitude: carLocation.longitude,
+        }}
+        title="Mi coche"
+        onPress={() => {
+          // Verifica si la ubicación del coche está dentro de alguna zona
+          const zonaInfo = isInZone(carLocation.latitude, carLocation.longitude   );
 
+          // Si está en una zona válida (debe pagar o está prohibido), muestra la alerta
+          if (zonaInfo) {
+            Alert.alert(
+              'Información de estacionamiento',
+              zonaInfo.mensaje, // El mensaje que se obtiene de isInZone
+              [{ text: 'OK' }],
+              { cancelable: false }
+            );
+          } else {
+            Alert.alert('El coche está fuera de las zonas definidas');
+          }
+        }}
+     />
+)}
         {/* Renderiza los polígonos por horario, si están visibles */}
         {Object.entries(zonasPorHorario).map(([horario, zonas]) =>
           visibilidadHorarios[horario] &&
