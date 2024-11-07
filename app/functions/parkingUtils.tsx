@@ -23,17 +23,17 @@ function esHorarioValido(diasPermitidos: string[], horarioInicio: string, horari
   const ahora = new Date();
   const diasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
   const diaActual = diasSemana[ahora.getDay()];
-  console.log(diaActual);
-  console.log(diasPermitidos);
+  //console.log(diaActual);
+  //console.log(diasPermitidos);
   const horaActual = ahora.getHours() * 60 + ahora.getMinutes();  // Convierte la hora a minutos para la comparación
-  console.log(horaActual);
+  //console.log(horaActual);
   // Convertimos los horarios de inicio y fin a minutos
   const [horaInicio, minutoInicio] = horarioInicio.split(":").map(Number);
   const [horaFin, minutoFin] = horarioFin.split(":").map(Number);
   const inicioEnMinutos = horaInicio * 60 + minutoInicio;
   const finEnMinutos = horaFin * 60 + minutoFin;
-  console.log(inicioEnMinutos);
-  console.log(finEnMinutos);
+  //console.log(inicioEnMinutos);
+  //console.log(finEnMinutos);
 
   // Verifica si el día actual está en los días permitidos
   if (!diasPermitidos.includes(String(diaActual))) {
