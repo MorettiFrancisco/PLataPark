@@ -21,14 +21,19 @@ const zonasPorHorario: { [horario: string]: Zona[] } = zonas.reduce((acc, zona) 
 // Función para verificar si el horario actual coincide con el horario de la zona
 function esHorarioValido(diasPermitidos: string[], horarioInicio: string, horarioFin: string): boolean {
   const ahora = new Date();
-  const diaActual = ahora.getDay();  // 0: Domingo, 1: Lunes, ..., 6: Sábado
+  const diasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+  const diaActual = diasSemana[ahora.getDay()];
+  console.log(diaActual);
+  console.log(diasPermitidos);
   const horaActual = ahora.getHours() * 60 + ahora.getMinutes();  // Convierte la hora a minutos para la comparación
-
+  console.log(horaActual);
   // Convertimos los horarios de inicio y fin a minutos
   const [horaInicio, minutoInicio] = horarioInicio.split(":").map(Number);
   const [horaFin, minutoFin] = horarioFin.split(":").map(Number);
   const inicioEnMinutos = horaInicio * 60 + minutoInicio;
   const finEnMinutos = horaFin * 60 + minutoFin;
+  console.log(inicioEnMinutos);
+  console.log(finEnMinutos);
 
   // Verifica si el día actual está en los días permitidos
   if (!diasPermitidos.includes(String(diaActual))) {
