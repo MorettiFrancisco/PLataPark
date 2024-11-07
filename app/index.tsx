@@ -110,6 +110,7 @@ export default function App() {
     };
   }, [permissionGranted]);
 
+
   if (!location) {
     return null; // O puedes mostrar un indicador de carga aquí
   }
@@ -138,30 +139,14 @@ export default function App() {
         }
       >
         {carLocation && (
-      <Marker
-        coordinate={{
-          latitude: carLocation.latitude,
-          longitude: carLocation.longitude,
-        }}
-        title="Mi coche"
-        onPress={() => {
-          // Verifica si la ubicación del coche está dentro de alguna zona
-          const zonaInfo = isInZone(carLocation.latitude, carLocation.longitude   );
-
-          // Si está en una zona válida (debe pagar o está prohibido), muestra la alerta
-          if (zonaInfo) {
-            Alert.alert(
-              'Información de estacionamiento',
-              zonaInfo.mensaje, // El mensaje que se obtiene de isInZone
-              [{ text: 'OK' }],
-              { cancelable: false }
-            );
-          } else {
-            Alert.alert('El coche está fuera de las zonas definidas');
-          }
-        }}
-     />
-)}
+          <Marker
+            coordinate={{
+              latitude: carLocation.latitude,
+              longitude: carLocation.longitude,
+            }}
+            title="Mi coche"
+          />
+        )}
         {/* Renderiza los polígonos por horario, si están visibles */}
         {Object.entries(zonasPorHorario).map(([horario, zonas]) =>
           visibilidadHorarios[horario] &&
