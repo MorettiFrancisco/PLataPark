@@ -28,7 +28,7 @@ export default function App() {
   if (!location) {
     return (
     <View>
-      <Button title='SEM' onPress={()=>handleOpenLink('uber://','https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata&hl=es_AR')} />
+      <Button title='SEM' onPress={()=>handleOpenLink('app://ar.edu.unlp.semmobile.laplata','https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata&hl=es_AR')} />
       <Button title='Activa la ubicacion' onPress={()=>openSettings()} />
 
     </View>
