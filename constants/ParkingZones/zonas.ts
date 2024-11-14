@@ -1,13 +1,19 @@
 interface Zona {
     color: string;
     horario: string;
+    dias: string[];
+    horarioInicio: string;
+    horarioFin: string;
     coordenadas: { latitude: number; longitude: number }[];
-  }
+  } 
   
   const zonas: Zona[] = [
     {
     color: 'rgba(255, 165, 0, 0.3)', // Amarillo/Naranja
     horario: "Lunes a viernes de 7 a 20 hs",
+    dias: ["lunes", "martes", "miércoles", "jueves", "viernes"],
+    horarioInicio: "7:00",
+    horarioFin: "20:00",
     coordenadas: [
         { latitude: -34.918163837412045, longitude: -57.949729669197225 },
         { latitude: -34.91729360765209, longitude: -57.94871719434552 },
@@ -56,6 +62,9 @@ interface Zona {
     {
       color: 'rgba(255, 0, 255, 0.3)', // Violeta/Rosa
       horario: "Lunes a viernes de 7 a 14 hs",
+      dias: ["lunes", "martes", "miércoles", "jueves", "viernes"],
+      horarioInicio: "7:00",
+      horarioFin: "14:00",
       coordenadas: [
         { latitude: -34.917370790632965, longitude: -57.962482878432226 },
         { latitude: -34.91818046565397, longitude: -57.96150293546498 },
@@ -80,6 +89,9 @@ interface Zona {
     {
       color: 'rgba(135, 206, 250, 0.6)', // Celeste
       horario: "Lunes a sábados de 9 a 20 hs",
+      dias: ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado"],
+      horarioInicio: "9:00",
+      horarioFin: "20:00",
       coordenadas: [
         { latitude: -34.92905411123089, longitude: -57.944159736202465 },
         { latitude: -34.928232954703944, longitude: -57.94325824563445 },
@@ -104,6 +116,9 @@ interface Zona {
     {
         color: 'rgba(0, 255, 0, 0.3)', 
         horario: "Sábados de 9 a 20 hs",
+        dias: ["sábado"],
+        horarioInicio: "9:00",
+        horarioFin: "20:00",
         coordenadas: [
           
           { latitude: -34.916843721308915, longitude: -57.947268292565326 },
@@ -116,6 +131,9 @@ interface Zona {
       {
         color: 'rgba(0, 255, 0, 0.3)', // Verde
         horario: "Sábados de 9 a 20 hs",
+        dias: ["sábado"],
+        horarioInicio: "9:00",
+        horarioFin: "20:00",
         coordenadas: [
           
           { latitude: -34.909949139575616, longitude: -57.94897135977557 },
@@ -130,6 +148,9 @@ interface Zona {
       {
         color: 'rgba(0, 255, 0, 0.3)', // Verde
         horario: "Sábados de 9 a 20 hs",
+        dias: ["sábado"],
+        horarioInicio: "9:00",
+        horarioFin: "20:00",
         coordenadas: [
           
           { latitude: -34.906816589077785, longitude: -57.94909630931021 },
@@ -142,6 +163,9 @@ interface Zona {
       {
         color: 'rgba(0, 0, 0, 0.8)', // Negro
         horario: "Prohibido estacionar",
+        dias: ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"],
+        horarioInicio: "00:00",
+        horarioFin: "23:59",
         coordenadas: [
           { latitude: -34.91128147412391, longitude: -57.954680614551236 },
           { latitude: -34.91689106398983, longitude: -57.947138334532156 },
@@ -153,6 +177,9 @@ interface Zona {
       {
         color: 'rgba(0, 0, 0, 0.8)', // Negro
         horario: "Prohibido estacionar",
+        dias: ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"],
+        horarioInicio: "00:00",
+        horarioFin: "23:59",
         coordenadas: [
           { latitude: -34.91642766113773, longitude: -57.95006217882495 },
           { latitude: -34.91634767817939, longitude: -57.94997259336104 },
@@ -160,8 +187,7 @@ interface Zona {
           { latitude: -34.91403634612192, longitude: -57.95325254459544 },
           { latitude: -34.91642766113773, longitude: -57.95006217882495 }
         ],
-      },
-                                      
+      },                                   
   ];
   
   export default zonas;
