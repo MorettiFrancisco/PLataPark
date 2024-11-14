@@ -5,17 +5,12 @@ import * as Location from 'expo-location';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import zonas from '../constants/ParkingZones/zonas';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { isInZone } from './functions/parkingUtils';
-
 
 interface Zona {
+  coordenadas: { latitude: number; longitude: number }[];
   color: string;
   horario: string;
-  dias: string[];
-  horarioInicio: string;
-  horarioFin: string;
-  coordenadas: { latitude: number; longitude: number }[];
-} 
+}
 
 type RouteParams = {
   carLatitude?: number;
@@ -110,7 +105,6 @@ export default function App() {
     };
   }, [permissionGranted]);
 
-
   if (!location) {
     return null; // O puedes mostrar un indicador de carga aquí
   }
@@ -147,6 +141,7 @@ export default function App() {
             title="Mi coche"
           />
         )}
+
         {/* Renderiza los polígonos por horario, si están visibles */}
         {Object.entries(zonasPorHorario).map(([horario, zonas]) =>
           visibilidadHorarios[horario] &&
