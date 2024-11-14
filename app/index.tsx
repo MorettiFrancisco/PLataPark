@@ -5,8 +5,14 @@ import * as Location from 'expo-location';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import zonas from '../constants/ParkingZones/zonas';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { isInZone } from './functions/parkingUtils';
+import { StackNavigationProp } from '@react-navigation/stack';
 
+// Define RootStackParamList for navigation
+type RootStackParamList = {
+  ParkMarker: undefined;
+};
+
+type NavigationProp = StackNavigationProp<RootStackParamList, 'ParkMarker'>;
 
 interface Zona {
   color: string;
@@ -34,7 +40,7 @@ export default function App() {
   const [permissionGranted, setPermissionGranted] = useState<boolean>(false);
   const [menuVisible, setMenuVisible] = useState<boolean>(false);
   const [visibilidadHorarios, setVisibilidadHorarios] = useState<{ [horario: string]: boolean }>({});
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
 
   const toggleHorarioVisibility = (horario: string) => {

@@ -4,6 +4,7 @@
     "slug": "mapApp",
     "version": "1.0.0",
     "orientation": "portrait",
+    "newArchEnabled": true,
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
@@ -27,13 +28,16 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      ["expo-router"],
       [
-        "expo-location", 
+        "expo-router"
+      ],
+      [
+        "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Allow PlataPark to use your location."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

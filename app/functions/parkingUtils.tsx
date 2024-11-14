@@ -23,20 +23,15 @@ function esHorarioValido(diasPermitidos: string[], horarioInicio: string, horari
   const ahora = new Date();
   const diasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
   const diaActual = diasSemana[ahora.getDay()];
-  //console.log(diaActual);
-  //console.log(diasPermitidos);
   const horaActual = ahora.getHours() * 60 + ahora.getMinutes();  // Convierte la hora a minutos para la comparación
-  //console.log(horaActual);
   // Convertimos los horarios de inicio y fin a minutos
   const [horaInicio, minutoInicio] = horarioInicio.split(":").map(Number);
   const [horaFin, minutoFin] = horarioFin.split(":").map(Number);
   const inicioEnMinutos = horaInicio * 60 + minutoInicio;
   const finEnMinutos = horaFin * 60 + minutoFin;
-  //console.log(inicioEnMinutos);
-  //console.log(finEnMinutos);
 
   // Verifica si el día actual está en los días permitidos
-  if (!diasPermitidos.includes(String(diaActual))) {
+  if (!diasPermitidos.includes(diaActual)) {
     return false;
   }
 
@@ -45,7 +40,7 @@ function esHorarioValido(diasPermitidos: string[], horarioInicio: string, horari
 }
 
 // Función para verificar si una ubicación está dentro de una zona específica
-export const isInZone = (latitude: number, longitude: number): { horario: string; zona: Zona; mensaje: string } | null => {
+export const isInZone = (latitude: number, longitude: number): { horario: string; zona: Zona; mensaje: string; horarioFin: string } | null => {
   for (const [horario, zonas] of Object.entries(zonasPorHorario)) {
     for (const zona of zonas) {
       const coordenadasPoligono: LatLng[] = zona.coordenadas.map(punto => ({ latitude: punto.latitude, longitude: punto.longitude }));
@@ -67,7 +62,7 @@ export const isInZone = (latitude: number, longitude: number): { horario: string
           mensaje = "Es un horario libre para estacionar.";
         }
 
-        return { horario, zona, mensaje };
+        return { horario, zona, mensaje, horarioFin: zona.horarioFin };
       }
     }
   }
