@@ -22,11 +22,12 @@ interface Zona {
   horarioInicio: string;
   horarioFin: string;
   coordenadas: { latitude: number; longitude: number }[];
-} 
+}
 
 type RouteParams = {
   carLatitude?: number;
   carLongitude?: number;
+  alarmData?: any; // Add alarmData property
 };
 
 // Agrupamos las zonas por horario
@@ -41,6 +42,7 @@ export default function App() {
   const [permissionGranted, setPermissionGranted] = useState<boolean>(false);
   const [menuVisible, setMenuVisible] = useState<boolean>(false);
   const [visibilidadHorarios, setVisibilidadHorarios] = useState<{ [horario: string]: boolean }>({});
+  const [alarmActive, setAlarmActive] = useState<boolean>(false);  // Estado para la alarma
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
 
@@ -69,12 +71,52 @@ export default function App() {
 
   useFocusEffect(
     React.useCallback(() => {
+      console.log('Screen focused!'); 
+      console.log('Route params:', route.params);  
       const { carLatitude, carLongitude } = route.params || {};
       if (typeof carLatitude === 'number' && typeof carLongitude === 'number') {
         setCarLocation({ latitude: carLatitude, longitude: carLongitude });
       }
-    }, [route.params])
+      console.log('Alarma activa:', alarmActive);
+      if (route.params?.alarmData) {
+        setAlarmActive(true);  
+      }
+      // Mostrar alerta si la alarma está activa al volver
+      if (alarmActive) {
+        console.log('Alarma activa: Cancelando notificaciones');
+        cancelNotification();  // Llama directamente a la función para cancelar las notificaciones
+        setAlarmActive(false); // Eliminar la alarma
+      }
+    }, [route.params, alarmActive]));
+
+const cancelNotification = async () => {
+  // Mostrar alerta de confirmación
+  Alert.alert(
+    "Cancelar notificaciones",
+    "¿Estás seguro de que deseas cancelar todas las notificaciones?",
+    [
+      {
+        text: "Sí",
+        onPress: async () => {
+          // Si el usuario acepta, cancelamos todas las notificaciones
+          const notifications = await Notifications.getAllScheduledNotificationsAsync();
+          console.log('Notificaciones activas:', notifications);  // Verificar qué notificaciones están activas
+          
+          // Cancelar todas las notificaciones activas
+          await Notifications.cancelAllScheduledNotificationsAsync();
+          console.log('Notificaciones canceladas');
+        },
+      },
+      {
+        text: "No",
+        onPress: () => {
+          // Si el usuario no acepta, navegar a ParkMarker
+          navigation.navigate('ParkMarker');
+        },
+      },
+    ]
   );
+};
 
   useEffect(() => {
     (async () => {
@@ -93,12 +135,13 @@ export default function App() {
       const { status } = await Notifications.requestPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert("Permiso denegado", "No tienes permisos para recibir notificaciones.");
+      } else {
+        console.log("Permisos de notificación otorgados.");
       }
     };
   
     askNotificationPermissions();
   }, []);
-
 
   useEffect(() => {
     let locationSubscription: Location.LocationSubscription | null = null;
@@ -128,7 +171,6 @@ export default function App() {
       }
     };
   }, [permissionGranted]);
-
 
   if (!location) {
     return null; // O puedes mostrar un indicador de carga aquí
@@ -220,35 +262,38 @@ const styles = StyleSheet.create({
   },
   menu: {
     position: 'absolute',
-    top: 120,
+    top: 80,
     right: 20,
     backgroundColor: '#fff',
-    borderRadius: 10,
     padding: 10,
-    elevation: 5,
+    borderRadius: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 5,
+    paddingVertical: 10,
   },
   checkbox: {
     marginRight: 10,
-    fontSize: 20,
   },
   menuText: {
     fontSize: 16,
+    color: '#000',
   },
   menuToggleButton: {
     position: 'absolute',
-    top: 60,
-    right: 10,
+    bottom: 20,
+    left: 20,
     backgroundColor: '#CEECF5',
-    borderRadius: 20,
     padding: 10,
-    elevation: 5,
+    borderRadius: 5,
   },
   menuToggleButtonText: {
+    color: 'black',
     fontSize: 16,
   },
 });
