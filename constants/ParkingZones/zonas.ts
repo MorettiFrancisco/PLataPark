@@ -201,7 +201,22 @@ interface Zona {
           { latitude: -34.84633007792297, longitude: -58.09130981093429 },
           { latitude: -34.84819518338275, longitude: -58.09219043455225 }
         ]
-      },                                  
+      },
+      {
+        color: 'rgba(0, 255, 0, 0.3)',
+        horario: "lunes a domingos de 9 a 24 hs",
+        dias: ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"],
+        horarioInicio: "0:00",
+        horarioFin: "20:00",
+        coordenadas: [
+          { latitude: -34.903626585916655, longitude: -57.93186857742259 },
+          { latitude: -34.90798056854138, longitude: -57.92594437186793 },
+          { latitude: -34.90390001460046, longitude: -57.91989155050537 },
+          { latitude: -34.899303722284955, longitude: -57.92554686251886 },
+          { latitude: -34.903626585916655, longitude: -57.93186857742259 }
+        ]
+      }
+                                        
   ];
   
   export default zonas;

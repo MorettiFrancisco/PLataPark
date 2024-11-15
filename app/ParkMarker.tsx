@@ -16,7 +16,6 @@ const ParkMarker = () => {
   const [showPicker, setShowPicker] = useState(false);
   const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
 
-  // Función para limpiar la notificación activa
   const cancelPreviousNotification = async () => {
     if (notificationId) {
       await Notifications.cancelScheduledNotificationAsync(notificationId);
@@ -25,22 +24,16 @@ const ParkMarker = () => {
     }
   };
 
-  // Limpiar las notificaciones cuando la app vuelva al primer plano
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (appState.match(/inactive|background/)) {
-        // La app está en segundo plano o cerrada
       } else if (nextAppState === 'active') {
-        // La app ha vuelto al primer plano, cancela las alarmas previas
         cancelPreviousNotification();
       }
       setAppState(nextAppState);
     };
 
-    // Usar la nueva API 'addListener' en lugar de 'addEventListener'
     const subscription = AppState.addEventListener('change', handleAppStateChange);
-
-    // Cleanup: quitar el listener cuando el componente se desmonte
     return () => {
       subscription.remove();
     };
@@ -52,8 +45,8 @@ const ParkMarker = () => {
       const { latitude, longitude } = location.coords;
       const zona = isInZone(latitude, longitude);
 
-      console.log("Zona detectada: ", zona); // Para depuración
-      setZonaInfo(zona); 
+      console.log("Zona detectada: ", zona);
+      setZonaInfo(zona);
 
       if (zona) {
         if (zona.mensaje === "No se puede estacionar en esta zona.") {
@@ -68,7 +61,7 @@ const ParkMarker = () => {
       }
     } catch (error) {
       Alert.alert("Error", "No se pudo obtener la ubicación.");
-      console.log("Error al obtener la ubicación: ", error); // Para depuración
+      console.log("Error al obtener la ubicación: ", error);
     }
   };
 
@@ -101,25 +94,21 @@ const ParkMarker = () => {
       return;
     }
 
-    // Cancelar alarmas anteriores
     await Notifications.cancelAllScheduledNotificationsAsync();
-    
-    // Crear una nueva alarma
-    const trigger = new Date(selectedTime).getTime();
-    if (trigger > Date.now()) {
-      const notification = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Alarma de estacionamiento",
-          body: "Es hora de mover tu coche.",
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: (trigger - Date.now()) / 1000,
-        }
-      });
-      setNotificationId(notification); // Guardar el ID de la notificación
-      setIsAlarmSet(true); // Marcar que la alarma está configurada
-    }
+
+    const notification = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Alarma de estacionamiento",
+        body: "Es hora de mover tu coche.",
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: Math.round(timeUntilAlarm / 1000),
+      },
+    });
+
+    setNotificationId(notification);
+    setIsAlarmSet(true);
   };
 
   const handleSaveLocation = async () => {
@@ -127,14 +116,13 @@ const ParkMarker = () => {
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
   
-      // Si hay una alarma configurada, pasamos el ID de la alarma
       const alarmData = isAlarmSet ? { notificationId } : null;
   
-      // Navegar a la pantalla "index" con los parámetros de ubicación y alarma
       navigation.navigate('index', {
         carLatitude: latitude,
         carLongitude: longitude,
-        alarmData, // Ahora alarmData es válido
+        alarmData,
+        fromParkMarker: true,
       });
   
       Alert.alert("Ubicación guardada", "La ubicación de tu coche ha sido guardada.");
@@ -161,7 +149,7 @@ const ParkMarker = () => {
           )}
         </>
       )}
-      {(isAlarmSet || zonaInfo?.mensaje === "Es un horario libre para estacionar.") && (
+      {(zonaInfo?.mensaje === "Es un horario libre para estacionar." || isAlarmSet || zonaInfo === null) && (
         <TouchableOpacity style={styles.roundButton} onPress={handleSaveLocation}>
           <Text style={styles.buttonText}>Guardar ubicación de mi coche</Text>
         </TouchableOpacity>

@@ -7,6 +7,7 @@ import zonas from '../constants/ParkingZones/zonas';
 import * as Notifications from 'expo-notifications';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { StackNavigationProp } from '@react-navigation/stack';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 // Define RootStackParamList for navigation
 type RootStackParamList = {
@@ -27,7 +28,8 @@ interface Zona {
 type RouteParams = {
   carLatitude?: number;
   carLongitude?: number;
-  alarmData?: any; // Add alarmData property
+  alarmData?: any; 
+  fromParkMarker?: boolean;
 };
 
 // Agrupamos las zonas por horario
@@ -45,6 +47,8 @@ export default function App() {
   const [alarmActive, setAlarmActive] = useState<boolean>(false);  // Estado para la alarma
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
+  const [showPicker, setShowPicker] = useState(false);
+  const [notificationId, setNotificationId] = useState<string | null>(null);
 
   const toggleHorarioVisibility = (horario: string) => {
     setVisibilidadHorarios((prevState) => ({
@@ -52,6 +56,19 @@ export default function App() {
       [horario]: !prevState[horario],
     }));
   };
+  
+  const handleExtendTime = () => {
+    setShowPicker(true);
+  };
+  
+  const handleTimeChange = async (event: any, selectedDate: Date | undefined) => {
+    if (!selectedDate) {
+      setShowPicker(false);
+      return;
+    }
+    
+    setShowPicker(false);
+
 
   const renderMenu = () => (
     <View style={styles.menu}>
@@ -73,50 +90,79 @@ export default function App() {
     React.useCallback(() => {
       console.log('Screen focused!'); 
       console.log('Route params:', route.params);  
-      const { carLatitude, carLongitude } = route.params || {};
+      const { carLatitude, carLongitude, fromParkMarker } = route.params || {};
+  
       if (typeof carLatitude === 'number' && typeof carLongitude === 'number') {
         setCarLocation({ latitude: carLatitude, longitude: carLongitude });
       }
-      console.log('Alarma activa:', alarmActive);
+  
+      // Activa la alarma solo si `alarmData` está en los parámetros
       if (route.params?.alarmData) {
         setAlarmActive(true);  
       }
-      // Mostrar alerta si la alarma está activa al volver
-      if (alarmActive) {
+  
+      // Verifica si se debe mostrar la alerta de cancelación
+      if (alarmActive && !fromParkMarker) {
         console.log('Alarma activa: Cancelando notificaciones');
-        cancelNotification();  // Llama directamente a la función para cancelar las notificaciones
-        setAlarmActive(false); // Eliminar la alarma
+        cancelNotification();
       }
-    }, [route.params, alarmActive]));
-
-const cancelNotification = async () => {
-  // Mostrar alerta de confirmación
-  Alert.alert(
-    "Cancelar notificaciones",
-    "¿Estás seguro de que deseas cancelar todas las notificaciones?",
-    [
-      {
-        text: "Sí",
-        onPress: async () => {
-          // Si el usuario acepta, cancelamos todas las notificaciones
-          const notifications = await Notifications.getAllScheduledNotificationsAsync();
-          console.log('Notificaciones activas:', notifications);  // Verificar qué notificaciones están activas
-          
-          // Cancelar todas las notificaciones activas
-          await Notifications.cancelAllScheduledNotificationsAsync();
-          console.log('Notificaciones canceladas');
-        },
-      },
-      {
-        text: "No",
-        onPress: () => {
-          // Si el usuario no acepta, navegar a ParkMarker
-          navigation.navigate('ParkMarker');
-        },
-      },
-    ]
+    }, [route.params, alarmActive])
   );
-};
+  
+  const cancelNotification = async () => {
+    Alert.alert(
+      "Bienvenido de nuevo",
+      "¿Quiere ser redirigido para cancelar el debito de su estacionamiento?",
+      [
+        {
+          text: "Sí, redirigir",
+          onPress: async () => {
+            await Notifications.cancelAllScheduledNotificationsAsync();
+            console.log('Notificaciones canceladas');
+            setAlarmActive(false);
+          },
+        },
+        {
+          text: "No, extender tiempo",
+          onPress: async () => {
+            try {
+              // Obtener todas las notificaciones programadas
+              const notificaciones = await Notifications.getAllScheduledNotificationsAsync();
+              
+              if (notificaciones.length > 0) {
+                const notificacionActual = notificaciones[0]; // Asumiendo que hay solo una notificación programada
+        
+                // Cancela la notificación actual
+                await Notifications.cancelScheduledNotificationAsync(notificacionActual.identifier);
+        
+                // Configura un nuevo tiempo para la notificación
+                const nuevoTiempo = new Date(); 
+                nuevoTiempo.setMinutes(nuevoTiempo.getMinutes() + 15); // Extiende el tiempo en 15 minutos, puedes ajustar esto según necesites
+        
+                // Programa una nueva notificación con el tiempo extendido
+                const nuevaNotificacionId = await Notifications.scheduleNotificationAsync({
+                  content: {
+                    title: notificacionActual.content.title,
+                    body: notificacionActual.content.body,
+                    data: notificacionActual.content.data,
+                  },
+                  trigger: nuevoTiempo.getTime() / 1000, // Configurar el tiempo en segundos
+                });
+        
+                console.log("Notificación extendida. Nuevo ID:", nuevaNotificacionId);
+              } else {
+                console.log("No hay notificaciones programadas para extender.");
+              }
+            } catch (error) {
+              console.error("Error al extender el tiempo de la notificación:", error);
+            }
+          },
+        }
+      ]
+    );
+  };
+  
+  
 
   useEffect(() => {
     (async () => {
