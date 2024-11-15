@@ -1,53 +1,136 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Button, Alert } from 'react-native';
+import { View, Text, StyleSheet, Button, Alert, TouchableOpacity, Linking } from 'react-native';
 import * as Location from 'expo-location';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../components/routes/types';
 import { isInZone } from './functions/parkingUtils';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ParkMarker = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [zonaInfo, setZonaInfo] = useState<{ mensaje: string; horarioFin: string } | null>(null);
-  const [isAlarmSet, setIsAlarmSet] = useState(false); // Estado para saber si la alarma fue configurada
+  const [isAlarmSet, setIsAlarmSet] = useState(false);
+  const [selectedTime, setSelectedTime] = useState<Date | undefined>(undefined);
+  const [notificationId, setNotificationId] = useState<string | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
 
   useEffect(() => {
     const fetchLocationAndCheckZone = async () => {
       try {
         const location = await Location.getCurrentPositionAsync({});
         const { latitude, longitude } = location.coords;
-
+    
         const zona = isInZone(latitude, longitude);
         setZonaInfo(zona);
-
-        // Si la zona está definida, actualizamos el estado
+    
         if (zona) {
           if (zona.mensaje === "No se puede estacionar en esta zona.") {
-            setZonaInfo({ ...zona, mensaje: zona.mensaje });
-          } else if (zona.mensaje === "Debe pagar para estacionar en esta zona.") {
-            setZonaInfo({ ...zona, mensaje: zona.mensaje });
+            Alert.alert("Advertencia", zona.mensaje);
+          } else if (zona.mensaje === "Debe pagar para estacionar en esta zona." && !isAlarmSet) {
+            Alert.alert("Zona paga", "Puede configurar una alarma para no exceder su horario.");
           } else {
-            setZonaInfo({ ...zona, mensaje: "La ubicación es libre para estacionar." });
+            Alert.alert("Zona libre", "La ubicación es libre para estacionar.");
           }
         } else {
-          setZonaInfo({ mensaje: "La ubicación es libre para estacionar.", horarioFin: "" });
+          // Si no se encuentra zona, debería ser libre
+          Alert.alert("Zona libre", "La ubicación es libre para estacionar.");
         }
       } catch (error) {
-        setZonaInfo({ mensaje: "Error al obtener la ubicación.", horarioFin: "" });
+        Alert.alert("Error", "No se pudo obtener la ubicación.");
       }
     };
 
     fetchLocationAndCheckZone();
-  }, []);
 
-  // Función para configurar la alarma
-  const configureAlarm = () => {
-    if (zonaInfo) {
-      Alert.alert("Alarma configurada", `La alarma ha sido configurada hasta las ${zonaInfo.horarioFin}.`);
-      setIsAlarmSet(true); // Actualizamos el estado para saber que la alarma está configurada
+    // Revisa si hay alarma guardada en AsyncStorage
+    const checkSavedAlarm = async () => {
+      try {
+        const savedTime = await AsyncStorage.getItem('alarmTime');
+        if (savedTime) {
+          const alarmTime = new Date(savedTime);
+          setSelectedTime(alarmTime);
+          const currentTime = new Date();
+          if (alarmTime > currentTime) {
+            // Si la alarma es futura, pregunta si la quiere modificar
+            Alert.alert(
+              "Alarma configurada",
+              `Ya tienes una alarma configurada para las ${alarmTime.getHours()}:${alarmTime.getMinutes()}. ¿Quieres modificarla?`,
+              [
+                { text: 'Modificar', onPress: () => setShowPicker(true) },
+                { text: 'Aceptar', onPress: () => checkIfTimeReached(alarmTime) },
+              ]
+            );
+          } else {
+            // Si la alarma ya ha pasado, redirige al usuario a la app de pagos
+            checkIfTimeReached(alarmTime);
+          }
+        }
+      } catch (error) {
+        console.log('Error al obtener la alarma:', error);
+      }
+    };
+
+    checkSavedAlarm();
+
+    // Limpiar la notificación cuando el componente se desmonte
+    return () => {
+      if (notificationId) {
+        Notifications.cancelScheduledNotificationAsync(notificationId);
+      }
+    };
+  }, [notificationId, isAlarmSet]); // Asegúrate de que el useEffect dependa de isAlarmSet
+
+  // Función para verificar si se alcanzó el horario de finalización de la zona
+  const checkIfTimeReached = (alarmTime: Date) => {
+    const currentTime = new Date();
+    if (alarmTime <= currentTime) {
+      // Si la hora de la alarma ya pasó, abre la aplicación de pagos
+      Linking.openURL('tu-esquema-de-uri://pago-estacionamiento')
+        .catch((err) => console.error('Error al abrir la aplicación de pagos:', err));
     }
   };
 
-  // Función para guardar la ubicación
+  const handleTimeChange = (event: any, selectedDate: Date | undefined) => {
+    if (!zonaInfo) return;
+    const [hora, minuto] = zonaInfo.horarioFin.split(":").map(Number);
+    const maxTime = new Date();
+    maxTime.setHours(hora, minuto, 0, 0);
+    setShowPicker(false);
+    if (selectedDate) {
+      setSelectedTime(selectedDate);
+      configureAlarm(selectedDate); // Configurar la alarma automáticamente
+    }
+  };
+
+  const configureAlarm = async (selectedTime: Date) => {
+    const timeUntilAlarm = selectedTime.getTime() - Date.now();
+
+    if (timeUntilAlarm < 0) {
+      Alert.alert("Hora inválida", "La hora seleccionada ya pasó. Por favor, seleccione una hora futura.");
+      return;
+    }
+
+    await AsyncStorage.setItem('alarmTime', selectedTime.toISOString());
+
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Alarma de estacionamiento",
+        body: `Tu tiempo en esta zona expira a las ${selectedTime.getHours()}:${selectedTime.getMinutes()}.`,
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: timeUntilAlarm / 1000,
+        repeats: false,
+      },
+    });
+
+    setNotificationId(id);
+    setIsAlarmSet(true); // Marca que la alarma está configurada
+    Alert.alert("Alarma configurada", `La alarma ha sido configurada para las ${selectedTime.getHours()}:${selectedTime.getMinutes()}.`);
+  };
+
   const handleSaveLocation = async () => {
     try {
       const location = await Location.getCurrentPositionAsync({});
@@ -62,34 +145,37 @@ const ParkMarker = () => {
 
   return (
     <View style={styles.container}>
-      {zonaInfo?.mensaje && (
-        <Text style={styles.statusText}>{zonaInfo.mensaje}</Text>
+      {zonaInfo?.mensaje === "No se puede estacionar en esta zona." && (
+        <Text style={styles.warningText}>No se puede estacionar en esta zona.</Text>
       )}
-
-      {/* Si está en zona paga y la alarma no ha sido configurada */}
       {zonaInfo?.mensaje === "Debe pagar para estacionar en esta zona." && !isAlarmSet && (
         <>
-          <Button title="Configurar alarma" onPress={configureAlarm} />
+          <Button title="Configurar alarma" onPress={() => setShowPicker(true)} />
+          {showPicker && (
+            <DateTimePicker
+              value={selectedTime || new Date()}
+              mode="time"
+              is24Hour={true}
+              onChange={handleTimeChange}
+            />
+          )}
         </>
       )}
-
-      {/* Si la alarma ya está configurada, permitimos guardar la ubicación */}
       {isAlarmSet && (
         <TouchableOpacity style={styles.roundButton} onPress={handleSaveLocation}>
           <Text style={styles.buttonText}>Guardar ubicación de mi coche</Text>
         </TouchableOpacity>
       )}
-
-      {/* Si la zona es libre o la zona no requiere pago, mostramos el botón directamente */}
-      {(zonaInfo?.mensaje === "Es un horario libre para estacionar." || zonaInfo === null || zonaInfo?.mensaje === "La ubicación es libre para estacionar.") && (
+      {(zonaInfo?.mensaje === "Es un horario libre para estacionar." || zonaInfo === null) && (
         <TouchableOpacity style={styles.roundButton} onPress={handleSaveLocation}>
           <Text style={styles.buttonText}>Guardar ubicación de mi coche</Text>
         </TouchableOpacity>
-      )}
+)}
 
-      {/* Si la alarma está configurada, mostrar la hora hasta cuando está configurada */}
-      {isAlarmSet && (
-        <Text style={styles.alarmText}>Alarma configurada hasta: {zonaInfo?.horarioFin}</Text>
+      {(zonaInfo?.mensaje === "Es un horario libre para estacionar." || zonaInfo === null) && (
+        <TouchableOpacity style={styles.roundButton} onPress={handleSaveLocation}>
+          <Text style={styles.buttonText}>Guardar ubicación de mi coche</Text>
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -100,7 +186,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
   roundButton: {
     backgroundColor: '#CEECF5',
@@ -108,25 +193,18 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 30,
     elevation: 5,
-    marginTop: 20,
   },
   buttonText: {
     color: 'black',
     fontWeight: 'bold',
     fontSize: 18,
   },
-  statusText: {
-    color: 'black',
+  warningText: {
+    color: 'red',
     fontWeight: 'bold',
     fontSize: 18,
     textAlign: 'center',
-    marginBottom: 20,
-  },
-  alarmText: {
-    color: 'green',
-    fontWeight: 'bold',
-    fontSize: 16,
-    marginTop: 10,
+    marginTop: 20,
   },
 });
 

@@ -4,6 +4,7 @@ import { StyleSheet, View, TouchableOpacity, Image, Alert, Text } from 'react-na
 import * as Location from 'expo-location';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import zonas from '../constants/ParkingZones/zonas';
+import * as Notifications from 'expo-notifications';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { StackNavigationProp } from '@react-navigation/stack';
 
@@ -86,6 +87,18 @@ export default function App() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    const askNotificationPermissions = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert("Permiso denegado", "No tienes permisos para recibir notificaciones.");
+      }
+    };
+  
+    askNotificationPermissions();
+  }, []);
+
 
   useEffect(() => {
     let locationSubscription: Location.LocationSubscription | null = null;
