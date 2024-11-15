@@ -6,7 +6,8 @@ import { openSettings } from 'expo-linking';
 
 export default function App() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
-
+  const packageName="ar.edu.unlp.semmobile.laplata"
+  const str=`intent://${packageName}#Intent;package=${packageName};end`
   useEffect(() => {
     (async () => {
       let location = await Location.getCurrentPositionAsync({});
@@ -28,7 +29,7 @@ export default function App() {
   if (!location) {
     return (
     <View>
-      <Button title='SEM' onPress={()=>handleOpenLink('app://ar.edu.unlp.semmobile.laplata','https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata&hl=es_AR')} />
+      <Button title='SEM' onPress={()=>handleOpenLink(str,'https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata&hl=es_AR')} />
       <Button title='Activa la ubicacion' onPress={()=>openSettings()} />
 
     </View>
@@ -37,7 +38,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Button title='SEM' onPress={()=>handleOpenLink('uber://','https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata')} />
+      <Button title='SEM' onPress={()=>handleOpenLink(str,'https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata')} />
       <MapView
         style={styles.map}
         provider={PROVIDER_GOOGLE}
