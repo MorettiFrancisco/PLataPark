@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
-import { Alert, Button, Linking, StyleSheet, View } from 'react-native';
+import { Alert, Button, Linking, Platform, StyleSheet, View } from 'react-native';
 import * as Location from 'expo-location';
 import { openSettings } from 'expo-linking';
 
 export default function App() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const packageName="ar.edu.unlp.semmobile.laplata"
-  const str=`intent://${packageName}#Intent;package=${packageName};end`
+  const android=`market://details?id=${packageName}`
+  const ios='https://apps.apple.com/ar/app/sem-mobile/id1387705895'
   useEffect(() => {
     (async () => {
       let location = await Location.getCurrentPositionAsync({});
@@ -15,13 +16,18 @@ export default function App() {
     })();
   }, []);
 
-  const handleOpenLink= async(url:string,alternativo:string)=>{
+  const handleOpenLink= async()=>{
     try{
-     await Linking.openURL(url);
+      if (Platform.OS==='android') {
+        
+        await Linking.openURL(android);
+      }else if (Platform.OS=== 'ios') {
+        await Linking.openURL(ios)
+      }
       
     }catch(e){
-      console.info("error abriendo link", url);
-      await Linking.openURL(alternativo);
+      
+      
       throw e;
     }
   }
@@ -29,7 +35,7 @@ export default function App() {
   if (!location) {
     return (
     <View>
-      <Button title='SEM' onPress={()=>handleOpenLink(str,'https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata&hl=es_AR')} />
+      <Button title='SEM' onPress={()=>handleOpenLink()} />
       <Button title='Activa la ubicacion' onPress={()=>openSettings()} />
 
     </View>
@@ -38,7 +44,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Button title='SEM' onPress={()=>handleOpenLink(str,'https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata')} />
+      <Button title='SEM' onPress={()=>handleOpenLink()} />
       <MapView
         style={styles.map}
         provider={PROVIDER_GOOGLE}
