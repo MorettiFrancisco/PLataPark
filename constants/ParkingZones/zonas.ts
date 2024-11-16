@@ -188,6 +188,11 @@ interface Zona {
           { latitude: -34.91642766113773, longitude: -57.95006217882495 }
         ],
       }, 
+
+
+      // testing zones
+
+      
       {
         color: 'rgba(0, 255, 0, 0.3)',
         horario: "lunes a domingos de 9 a 24 hs",
@@ -203,20 +208,19 @@ interface Zona {
         ]
       },
       {
-        color: 'rgba(0, 255, 0, 0.3)',
-        horario: "lunes a domingos de 9 a 24 hs",
-        dias: ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"],
-        horarioInicio: "0:00",
-        horarioFin: "20:00",
+        color: "#FF0000", // Puedes cambiar este color a uno adecuado
+        horario: "1:00 - 18:00", // Ejemplo de horario, ajusta según tu necesidad
+        dias: ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"], // Días en los que está vigente
+        horarioInicio: "01:00",
+        horarioFin: "18:00",
         coordenadas: [
-          { latitude: -34.903626585916655, longitude: -57.93186857742259 },
-          { latitude: -34.90798056854138, longitude: -57.92594437186793 },
-          { latitude: -34.90390001460046, longitude: -57.91989155050537 },
-          { latitude: -34.899303722284955, longitude: -57.92554686251886 },
-          { latitude: -34.903626585916655, longitude: -57.93186857742259 }
+          { latitude: -34.896624492606705, longitude: -57.93751552154403 },
+          { latitude: -34.89922025145114, longitude: -57.933886280956145 },
+          { latitude: -34.897416257862325, longitude: -57.931307931583376 },
+          { latitude: -34.89560220213429, longitude: -57.93491273283966 },
+          { latitude: -34.896624492606705, longitude: -57.93751552154403 }
         ]
-      }
-                                        
+      },                                
   ];
   
   export default zonas;
