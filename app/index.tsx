@@ -6,7 +6,7 @@ import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navig
 import zonas from '../constants/ParkingZones/zonas';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { isInZone } from './functions/parkingUtils';
-
+import LuncherSEM from './LuncherSEM';
 
 interface Zona {
   color: string;
@@ -117,6 +117,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
+    <LuncherSEM/>
       <MapView
         style={styles.map}
         provider={PROVIDER_GOOGLE}
