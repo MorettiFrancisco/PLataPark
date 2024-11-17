@@ -192,35 +192,22 @@ interface Zona {
 
       // testing zones
 
+      {
+        "color": "rgba(0, 0, 0, 0.8)", // Negro
+        "horario": "UTN frlp",
+        "dias": ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"],
+        "horarioInicio": "00:00",
+        "horarioFin": "23:59",
+        "coordenadas": [
+          { "latitude": -34.90479083038695, "longitude": -57.92761890553224 },
+          { "latitude": -34.90590739691761, "longitude": -57.925360227101166 },
+          { "latitude": -34.903499983106066, "longitude": -57.92371540552671 },
+          { "latitude": -34.90284809751808, "longitude": -57.92568289544819 },
+          { "latitude": -34.90479083038695, "longitude": -57.92761890553224 }
+        ]
+      }
       
-      {
-        color: 'rgba(0, 255, 0, 0.3)',
-        horario: "lunes a domingos",
-        dias: ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"],
-        horarioInicio: "0:00",
-        horarioFin: "23:59",
-        coordenadas: [
-          { latitude: -34.84819518338275, longitude: -58.09219043455225 },
-          { latitude: -34.84897545145058, longitude: -58.089216252899945 },
-          { latitude: -34.846970975190764, longitude: -58.08836886036286 },
-          { latitude: -34.84633007792297, longitude: -58.09130981093429 },
-          { latitude: -34.84819518338275, longitude: -58.09219043455225 }
-        ]
-      },
-      {
-        color: "#FF0000", // Puedes cambiar este color a uno adecuado
-        horario: "1:00 - 18:00", // Ejemplo de horario, ajusta según tu necesidad
-        dias: ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"], // Días en los que está vigente
-        horarioInicio: "01:00",
-        horarioFin: "18:00",
-        coordenadas: [
-          { latitude: -34.896624492606705, longitude: -57.93751552154403 },
-          { latitude: -34.89922025145114, longitude: -57.933886280956145 },
-          { latitude: -34.897416257862325, longitude: -57.931307931583376 },
-          { latitude: -34.89560220213429, longitude: -57.93491273283966 },
-          { latitude: -34.896624492606705, longitude: -57.93751552154403 }
-        ]
-      },                                
+                                
   ];
   
   export default zonas;
