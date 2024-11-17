@@ -1,50 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Button, Alert, TouchableOpacity, AppState, AppStateStatus } from 'react-native';
+import { View, Text, StyleSheet, Button, Alert, TouchableOpacity } from 'react-native';
 import * as Location from 'expo-location';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../components/routes/types';
 import { isInZone } from './functions/parkingUtils';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import * as Notifications from 'expo-notifications';
+import { schedulePushNotification } from './functions/notificationsUtils';  
 
 const ParkMarker = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [zonaInfo, setZonaInfo] = useState<{ mensaje: string; horarioFin: string } | null>(null);
   const [isAlarmSet, setIsAlarmSet] = useState(false);
   const [selectedTime, setSelectedTime] = useState<Date | undefined>(undefined);
-  const [notificationId, setNotificationId] = useState<string | null>(null);
   const [showPicker, setShowPicker] = useState(false);
-  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
-
-  const cancelPreviousNotification = async () => {
-    if (notificationId) {
-      await Notifications.cancelScheduledNotificationAsync(notificationId);
-      setNotificationId(null);
-      setIsAlarmSet(false);
-    }
-  };
-
-  useEffect(() => {
-    const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      if (appState.match(/inactive|background/)) {
-      } else if (nextAppState === 'active') {
-        cancelPreviousNotification();
-      }
-      setAppState(nextAppState);
-    };
-
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-    return () => {
-      subscription.remove();
-    };
-  }, [appState]);
+  const [notificationId, setNotificationId] = useState<string | null>(null);
 
   const fetchLocationAndCheckZone = async () => {
     try {
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
       const zona = isInZone(latitude, longitude);
-
+      
       console.log("Zona detectada: ", zona);
       setZonaInfo(zona);
 
@@ -80,7 +56,7 @@ const ParkMarker = () => {
 
     if (selectedDate && selectedDate <= maxTime) {
       setSelectedTime(selectedDate);
-      configureAlarm(selectedDate);
+      configureAlarm(selectedDate);  
     } else {
       Alert.alert("Hora inválida", "La hora seleccionada no es válida.");
     }
@@ -88,26 +64,17 @@ const ParkMarker = () => {
 
   const configureAlarm = async (selectedTime: Date) => {
     const timeUntilAlarm = selectedTime.getTime() - Date.now();
-
+  
     if (timeUntilAlarm < 0) {
       Alert.alert("Hora inválida", "La hora seleccionada ya pasó. Por favor, seleccione una hora futura.");
       return;
     }
-
-    await Notifications.cancelAllScheduledNotificationsAsync();
-
-    const notification = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Alarma de estacionamiento",
-        body: "Es hora de mover tu coche.",
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: Math.round(timeUntilAlarm / 1000),
-      },
-    });
-
-    setNotificationId(notification);
+  
+   
+    const notificationId = await schedulePushNotification(selectedTime);
+    console.log("Notificación programada con ID: ", notificationId);
+  
+    setNotificationId(notificationId); // Guardamos el ID de la notificación para futuras cancelaciones
     setIsAlarmSet(true);
   };
 
@@ -116,6 +83,7 @@ const ParkMarker = () => {
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
   
+      // Usa `notificationId` que ahora está en el estado
       const alarmData = isAlarmSet ? { notificationId } : null;
   
       navigation.navigate('index', {
@@ -150,7 +118,7 @@ const ParkMarker = () => {
         </>
       )}
       {(zonaInfo?.mensaje === "Es un horario libre para estacionar." || isAlarmSet || zonaInfo === null) && (
-        <TouchableOpacity style={styles.roundButton} onPress={handleSaveLocation}>
+        <TouchableOpacity style={styles.roundButton} onPress={handleSaveLocation} disabled={!isAlarmSet}>
           <Text style={styles.buttonText}>Guardar ubicación de mi coche</Text>
         </TouchableOpacity>
       )}
