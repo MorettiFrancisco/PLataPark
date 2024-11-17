@@ -39,3 +39,7 @@ yarn-error.*
 
 expo-env.d.ts
 # @end expo-cli
+
+android
+
+platapark-6f249-firebase-adminsdk-3tee4-14b7932649.json

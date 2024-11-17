@@ -2,11 +2,20 @@ import React, { useState, useEffect } from 'react';
 import MapView, { Marker, PROVIDER_GOOGLE, Polygon } from 'react-native-maps';
 import { StyleSheet, View, TouchableOpacity, Image, Alert, Text } from 'react-native';
 import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import zonas from '../constants/ParkingZones/zonas';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { isInZone } from './functions/parkingUtils';
-import LuncherSEM from './LuncherSEM';
+import { schedulePushNotification, cancelAllNotifications, cancelNotificationById } from './functions/notificationsUtils';
+import DateTimePicker from '@react-native-community/datetimepicker';
+
+type RootStackParamList = {
+  ParkMarker: undefined;
+};
+
+type NavigationProp = StackNavigationProp<RootStackParamList, 'ParkMarker'>;
 
 interface Zona {
   color: string;
@@ -15,14 +24,15 @@ interface Zona {
   horarioInicio: string;
   horarioFin: string;
   coordenadas: { latitude: number; longitude: number }[];
-} 
+}
 
 type RouteParams = {
   carLatitude?: number;
   carLongitude?: number;
+  alarmData?: any;
+  fromParkMarker?: boolean;
 };
 
-// Agrupamos las zonas por horario
 const zonasPorHorario: { [horario: string]: Zona[] } = zonas.reduce((acc, zona) => {
   acc[zona.horario] = acc[zona.horario] ? [...acc[zona.horario], zona] : [zona];
   return acc;
@@ -31,11 +41,32 @@ const zonasPorHorario: { [horario: string]: Zona[] } = zonas.reduce((acc, zona) 
 export default function App() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [carLocation, setCarLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [permissionGranted, setPermissionGranted] = useState<boolean>(false);
   const [menuVisible, setMenuVisible] = useState<boolean>(false);
   const [visibilidadHorarios, setVisibilidadHorarios] = useState<{ [horario: string]: boolean }>({});
-  const navigation = useNavigation();
+  const [showDatePicker, setShowDatePicker] = useState(false); // Mostrar el DateTimePicker
+  const [selectedTime, setSelectedTime] = useState<Date | undefined>(undefined); // Hora seleccionada
+  const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
+  
+  useEffect(() => {
+    const getPermission = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso de localización', 'Necesitamos permiso para acceder a tu localización');
+      }
+    };
+
+    getPermission();
+  }, []);
+
+  useEffect(() => {
+    const getLocation = async () => {
+      const location = await Location.getCurrentPositionAsync();
+      setLocation(location);
+    };
+
+    getLocation();
+  }, []);
 
   const toggleHorarioVisibility = (horario: string) => {
     setVisibilidadHorarios((prevState) => ({
@@ -43,6 +74,70 @@ export default function App() {
       [horario]: !prevState[horario],
     }));
   };
+
+  // Manejar la respuesta de la notificación
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response: Notifications.NotificationResponse) => {
+        cancelAllNotifications(); 
+
+       
+        Alert.alert(
+          'La alarma que usted fijó para las: ' + response.notification.request.content.title + ' ha sido activada.',
+          '¿Qué te gustaría hacer?',
+          [
+            {
+              text: 'Ser redirigido a la aplicación SEM para cortar el débito',
+              onPress: () => {
+                console.log('Redirigiendo a otra app...');
+              },
+            },
+            {
+              text: 'Posponer alarma',
+              onPress: () => {
+                setShowDatePicker(true); // Mostrar el DateTimePicker
+              },
+            },
+          ]
+        );
+      }
+    );
+
+    return () => subscription.remove();
+  }, []);
+
+  const handleTimeChange = async (event: any, selectedDate: Date | undefined) => {
+    const location = await Location.getCurrentPositionAsync({});
+    const { latitude, longitude } = location.coords;
+    const zona = isInZone(latitude, longitude);
+    if (zona) {
+      const [hora, minuto] = zona.horarioFin.split(":").map(Number);
+      const maxTime = new Date();
+      maxTime.setHours(hora, minuto, 0, 0);
+      setShowDatePicker(false);
+      if (selectedDate && selectedDate <= maxTime)  {
+        setSelectedTime(selectedDate);
+        cancelAllNotifications(); 
+        schedulePushNotification(selectedDate);
+    }
+    } else {
+      Alert.alert("Zona libre", "La ubicación es libre para estacionar.");
+    }
+    
+  };
+
+  const showDatePickerModal = () => {
+    setShowDatePicker(true);
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const { carLatitude, carLongitude, fromParkMarker } = route.params || {};
+      if (typeof carLatitude === 'number' && typeof carLongitude === 'number') {
+        setCarLocation({ latitude: carLatitude, longitude: carLongitude });
+      }
+    }, [route.params])
+  );
 
   const renderMenu = () => (
     <View style={styles.menu}>
@@ -60,64 +155,10 @@ export default function App() {
     </View>
   );
 
-  useFocusEffect(
-    React.useCallback(() => {
-      const { carLatitude, carLongitude } = route.params || {};
-      if (typeof carLatitude === 'number' && typeof carLongitude === 'number') {
-        setCarLocation({ latitude: carLatitude, longitude: carLongitude });
-      }
-    }, [route.params])
-  );
-
-  useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        setPermissionGranted(true);
-      } else {
-        Alert.alert('Permiso denegado', 'Necesitas conceder permisos de localización para usar esta funcionalidad.');
-        setPermissionGranted(false);
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    let locationSubscription: Location.LocationSubscription | null = null;
-
-    if (permissionGranted) {
-      (async () => {
-        try {
-          let location = await Location.getCurrentPositionAsync({});
-          setLocation(location);
-
-          locationSubscription = await Location.watchPositionAsync(
-            { accuracy: Location.Accuracy.High, distanceInterval: 1 },
-            (newLocation) => {
-              setLocation(newLocation);
-            }
-          );
-        } catch (error) {
-          console.error('Error obteniendo ubicación:', error);
-          Alert.alert('Error', 'No se pudo obtener la ubicación.');
-        }
-      })();
-    }
-
-    return () => {
-      if (locationSubscription) {
-        locationSubscription.remove();
-      }
-    };
-  }, [permissionGranted]);
-
-
-  if (!location) {
-    return null; // O puedes mostrar un indicador de carga aquí
-  }
+  if (!location) return null;
 
   return (
     <View style={styles.container}>
-    <LuncherSEM/>
       <MapView
         style={styles.map}
         provider={PROVIDER_GOOGLE}
@@ -148,89 +189,65 @@ export default function App() {
             title="Mi coche"
           />
         )}
-        {/* Renderiza los polígonos por horario, si están visibles */}
         {Object.entries(zonasPorHorario).map(([horario, zonas]) =>
-          visibilidadHorarios[horario] &&
-          zonas.map((zona, index) => (
-            <Polygon
-              key={`${horario}-${index}`}
-              coordinates={zona.coordenadas}
-              strokeColor={zona.color}
-              fillColor={zona.color}
-              strokeWidth={2}
-            />
-          ))
+          visibilidadHorarios[horario]
+            ? zonas.map((zona, index) => (
+                <Polygon
+                  key={index}
+                  coordinates={zona.coordenadas}
+                  fillColor={zona.color}
+                />
+              ))
+            : null
         )}
       </MapView>
-
-      <TouchableOpacity style={styles.menuToggleButton} onPress={() => setMenuVisible(!menuVisible)}>
-        <Text style={styles.menuToggleButtonText}>{menuVisible ? 'Cerrar Menú' : 'Menú de zonas'}</Text>
+      <TouchableOpacity style={styles.parkMarkerButton} onPress={() => navigation.navigate('ParkMarker')}>
+        <Image
+          source={require('../assets/images/LocationMarker.png')}
+          style={styles.parkMarkerIcon}
+        />
       </TouchableOpacity>
-
+      <TouchableOpacity style={styles.zoneMenuButton} onPress={() => setMenuVisible(!menuVisible)}>
+        <Text style={styles.zoneMenuButtonText}>{menuVisible ? 'Cerrar menú' : 'Menú de zonas'}</Text>
+      </TouchableOpacity>
       {menuVisible && renderMenu()}
 
-      <TouchableOpacity
-        style={styles.floatingButton}
-        onPress={() => navigation.navigate('ParkMarker' as never)}
-      >
-        <Image source={require('../assets/images/LocationMarker.png')} style={styles.buttonImage} />
-      </TouchableOpacity>
+      {showDatePicker && (
+        <DateTimePicker
+          value={selectedTime || new Date()}
+          mode="time"
+          display="default"
+          onChange={handleTimeChange}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  map: {
-    width: '100%',
-    height: '100%',
-  },
-  floatingButton: {
+  container: { flex: 1 },
+  map: { width: '100%', height: '100%' },
+  parkMarkerButton: { position: 'absolute', bottom: 100, right: 20, padding: 10 },
+  parkMarkerIcon: { width: 40, height: 40 },
+  zoneMenuButton: {
     position: 'absolute',
-    bottom: 80,
-    right: 20,
-    backgroundColor: '#CEECF5',
-    borderRadius: 40,
-    padding: 15,
-    elevation: 5,
+    top: 50,
+    right: 10,
+    padding: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 5,
   },
-  buttonImage: {
-    width: 40,
-    height: 40,
-  },
+  zoneMenuButtonText: { color: '#fff' },
   menu: {
     position: 'absolute',
-    top: 120,
-    right: 20,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 10,
-    elevation: 5,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 5,
-  },
-  checkbox: {
-    marginRight: 10,
-    fontSize: 20,
-  },
-  menuText: {
-    fontSize: 16,
-  },
-  menuToggleButton: {
-    position: 'absolute',
-    top: 60,
+    top: 100,
     right: 10,
-    backgroundColor: '#CEECF5',
-    borderRadius: 20,
-    padding: 10,
-    elevation: 5,
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 5,
+    boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
   },
-  menuToggleButtonText: {
-    fontSize: 16,
-  },
+  menuItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  checkbox: { marginRight: 10 },
+  menuText: { fontSize: 16 },
 });
