@@ -195,10 +195,10 @@ interface Zona {
       
       {
         color: 'rgba(0, 255, 0, 0.3)',
-        horario: "lunes a domingos de 9 a 24 hs",
+        horario: "lunes a domingos",
         dias: ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"],
         horarioInicio: "0:00",
-        horarioFin: "20:00",
+        horarioFin: "23:59",
         coordenadas: [
           { latitude: -34.84819518338275, longitude: -58.09219043455225 },
           { latitude: -34.84897545145058, longitude: -58.089216252899945 },

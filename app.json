@@ -17,15 +17,26 @@
       "supportsTablet": true
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDJrQweYd6xx0u-UIkIMByQoZCcCxcz4IA"
+        }
+      },  
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "package": "com.morettifrancisco.mapApp"
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+    "extra": {
+      "eas": {
+        "projectId": "cc50556e-67fe-42e3-bf36-91b6a5952da6"
+      }
     },
     "plugins": [
       [
@@ -40,11 +51,10 @@
       [
         "expo-notifications",
         {
-          "icon": "./local/path/to/myNotificationIcon.png",
+          "icon": "./assets/images/LocationMarker.png",
           "color": "#ffffff",
           "sounds": [
-            "./local/path/to/mySound.wav",
-            "./local/path/to/myOtherSound.wav"
+            "./assets/sounds/notification.wav"
           ],
           "mode": "production"
         }
@@ -53,6 +63,11 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+  "web": {
+    "bundler": "metro",
+    "output": "static",
+    "favicon": "./assets/images/favicon.png"
   }
+}
 }
