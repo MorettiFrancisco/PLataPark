@@ -43,3 +43,5 @@ expo-env.d.ts
 android
 
 platapark-6f249-firebase-adminsdk-3tee4-14b7932649.json
+
+.env
