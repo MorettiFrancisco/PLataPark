@@ -8,9 +8,6 @@ import * as Notifications from 'expo-notifications';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { isInZone } from './functions/parkingUtils';
-import messaging from '@react-native-firebase/messaging';
-import { StatusBar } from 'expo-status-bar';
 
 type RootStackParamList = {
   ParkMarker: undefined;
@@ -40,7 +37,6 @@ const zonasPorHorario: { [horario: string]: Zona[] } = zonas.reduce((acc, zona) 
 }, {} as { [horario: string]: Zona[] });
 
 export default function App() {
-  
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [carLocation, setCarLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [permissionGranted, setPermissionGranted] = useState<boolean>(false);
@@ -52,118 +48,39 @@ export default function App() {
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
 
-  const requestUserPermission = async () => {
-    const authStatus = await messaging().requestPermission();
-    const enabled =
-      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-    
-    if (enabled) {
-      console.log('Authorization status:', authStatus);
-    }
-    
-    return enabled;  
-  };
-  
-  useEffect(() => {
-    
-    const checkPermissionAndGetToken = async () => {
-      const isPermissionGranted = await requestUserPermission();
-      
-      if (isPermissionGranted) {
-        messaging()
-          .getToken()
-          .then((token) => {
-            console.log('Token del dispositivo:', token);
-          });
-      } else {
-        console.log('No se pudo obtener el token del dispositivo.');
-      }
-  
-      messaging()
-        .getInitialNotification()
-        .then(async (remoteMessage) => {
-          if (remoteMessage) {
-            console.log('Notificación inicial:', remoteMessage.notification);
-          }
-        });
-  
-      messaging().onNotificationOpenedApp((remoteMessage) => {
-        console.log('Notificación abierta en la app:', remoteMessage.notification);
-      });
-  
-      messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-        console.log('Notificación recibida en segundo plano:', remoteMessage.notification);
-      });
-  
-      const unsubscribe = messaging().onMessage(async (remoteMessage) => {
-        Alert.alert('A new FCM message arrived!', JSON.stringify(remoteMessage));
-      });
-  
-      return unsubscribe;  
-    };
-  
-  
-    checkPermissionAndGetToken();
-  
-  }, []); 
-  
   const toggleHorarioVisibility = (horario: string) => {
     setVisibilidadHorarios((prevState) => ({
       ...prevState,
       [horario]: !prevState[horario],
     }));
   };
-
+  
   const handleExtendTime = () => {
-    if (!location) {
-      Alert.alert("Ubicación no disponible", "No se pudo obtener la ubicación actual.");
-      return;
-    }
-    const zonaActual = isInZone(location.coords.latitude, location.coords.longitude);
-    if (!zonaActual) {
-      Alert.alert("Fuera de zona", "No estás en una zona definida para configurar una alarma.");
-      return;
-    }
-
-    setShowPicker(true);
+    setShowPicker(true); // Mostrar el selector de fecha y hora
   };
 
   const handleTimeChange = async (event: any, date?: Date) => {
     setShowPicker(false);
     if (event.type === 'set' && date) {
-      if (!location) {
-        Alert.alert("Ubicación no disponible", "No se pudo obtener la ubicación actual.");
-        return;
-      }
-      const zonaActual = isInZone(location.coords.latitude, location.coords.longitude);
-      if (!zonaActual) {
-        Alert.alert("Fuera de zona", "No estás en una zona definida para configurar una alarma.");
-        return;
-      }
-  
-      const [hora, minuto] = zonaActual.horarioFin.split(":").map(Number);
-      const maxTime = new Date();
-      maxTime.setHours(hora, minuto, 0, 0);
-  
-      if (date <= maxTime) {
-        setSelectedDate(date);
-        await actualizarAlarma(date); // Cambiado a date para guardar la alarma personalizada
-      } else {
-        Alert.alert("Hora inválida", "La hora seleccionada supera el horario permitido de la zona.");
-      }
-    }
-  };
+      setSelectedDate(date);
+      const notificaciones = await Notifications.getAllScheduledNotificationsAsync();
+      if (notificaciones.length > 0) {
+        const notificacionActual = notificaciones[0];
+        await Notifications.cancelScheduledNotificationAsync(notificacionActual.identifier);
 
-  const actualizarAlarma = async (fechaSeleccionada: Date) => {
-    const timeUntilAlarm = fechaSeleccionada.getTime() - Date.now();
-  
-    if (timeUntilAlarm < 0) {
-      Alert.alert("Hora inválida", "La hora seleccionada ya pasó. Por favor, seleccione una hora futura.");
-      return;
+        const nuevaNotificacionId = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: notificacionActual.content.title,
+            body: notificacionActual.content.body,
+            data: notificacionActual.content.data,
+          },
+          trigger: date.getTime() / 1000,
+        });
+        console.log("Notificación extendida. Nuevo ID:", nuevaNotificacionId);
+      } else {
+        console.log("No hay notificaciones programadas para extender.");
+      }
     }
-  
-    console.log("Notificación configurada a través de Firebase HTTP v1.");
   };
 
   const renderMenu = () => (
@@ -182,6 +99,7 @@ export default function App() {
     </View>
   );
 
+
   useFocusEffect(
     React.useCallback(() => {
       const { carLatitude, carLongitude, fromParkMarker } = route.params || {};
@@ -196,13 +114,11 @@ export default function App() {
       }
     }, [route.params, alarmActive])
   );
-
-  const cancelNotification = async () => {
-    if (!alarmActive) return;
   
+  const cancelNotification = async () => {
     Alert.alert(
       "Bienvenido de nuevo",
-      "¿Quiere ser redirigido para cancelar el débito de su estacionamiento?",
+      "¿Quiere ser redirigido para cancelar el debito de su estacionamiento?",
       [
         {
           text: "Sí, redirigir",
@@ -214,7 +130,7 @@ export default function App() {
         {
           text: "No, extender tiempo",
           onPress: handleExtendTime,
-        },
+        }
       ]
     );
   };
@@ -225,13 +141,38 @@ export default function App() {
       setPermissionGranted(status === 'granted');
       if (status !== 'granted') {
         Alert.alert('Permiso denegado', 'Necesitas conceder permisos de localización para usar esta funcionalidad.');
-      } else {
-        const locationData = await Location.getCurrentPositionAsync({});
-        setLocation(locationData);
-        console.log(locationData); // Verifica que se está obteniendo la ubicación
       }
     })();
   }, []);
+
+  useEffect(() => {
+    const askNotificationPermissions = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert("Permiso denegado", "No tienes permisos para recibir notificaciones.");
+      }
+    };
+    askNotificationPermissions();
+  }, []);
+
+  useEffect(() => {
+    let locationSubscription: Location.LocationSubscription | null = null;
+    if (permissionGranted) {
+      (async () => {
+        let location = await Location.getCurrentPositionAsync({});
+        setLocation(location);
+        locationSubscription = await Location.watchPositionAsync(
+          { accuracy: Location.Accuracy.High, distanceInterval: 1 },
+          (newLocation) => {
+            setLocation(newLocation);
+          }
+        );
+      })();
+    }
+    return () => {
+      if (locationSubscription) locationSubscription.remove();
+    };
+  }, [permissionGranted]);
 
   if (!location) return null;
 
@@ -268,35 +209,34 @@ export default function App() {
           />
         )}
         {Object.entries(zonasPorHorario).map(([horario, zonas]) =>
-          visibilidadHorarios[horario]
-            ? zonas.map((zona, index) => (
-                <Polygon
-                  key={index}
-                  coordinates={zona.coordenadas}
-                  fillColor={zona.color}
-                  strokeColor="#FF0000"
-                  strokeWidth={2}
-                />
-              ))
-            : null
+          visibilidadHorarios[horario] &&
+          zonas.map((zona, index) => (
+            <Polygon
+              key={`${horario}-${index}`}
+              coordinates={zona.coordenadas}
+              strokeColor={zona.color}
+              fillColor={zona.color}
+              strokeWidth={2}
+            />
+          ))
         )}
       </MapView>
-      <TouchableOpacity style={styles.parkMarkerButton} onPress={() => navigation.navigate('ParkMarker')}>
-        <Image
-          source={require('../assets/images/LocationMarker.png')}
-          style={styles.parkMarkerIcon}
-        />
+
+      <TouchableOpacity style={styles.menuToggleButton} onPress={() => setMenuVisible(!menuVisible)}>
+        <Text style={styles.menuToggleButtonText}>{menuVisible ? 'Cerrar Menú' : 'Menú de zonas'}</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.zoneMenuButton} onPress={() => setMenuVisible(!menuVisible)}>
-        <Text style={styles.zoneMenuButtonText}>{menuVisible ? 'Cerrar menú' : 'Menú de zonas'}</Text>
-      </TouchableOpacity>
+
       {menuVisible && renderMenu()}
-      <StatusBar style="auto" />
+
+      <TouchableOpacity style={styles.floatingButton} onPress={() => navigation.navigate('ParkMarker' as never)}>
+        <Image source={require('../assets/images/LocationMarker.png')} style={styles.buttonImage} />
+      </TouchableOpacity>
+
       {showPicker && (
         <DateTimePicker
+          value={selectedDate || new Date()}
           mode="time"
           display="default"
-          value={selectedDate || new Date()}
           onChange={handleTimeChange}
         />
       )}
@@ -305,64 +245,25 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  map: { width: '100%', height: '100%' },
+  floatingButton: {
+    position: 'absolute', bottom: 80, right: 20,
+    backgroundColor: '#CEECF5', borderRadius: 40, padding: 15, elevation: 5,
   },
-  map: {
-    width: '100%',
-    height: '100%',
-  },
-  parkMarkerButton: {
-    position: 'absolute',
-    bottom: 80,
-    right: 20,
-    backgroundColor: '#CEECF5',
-    borderRadius: 30,
-    padding: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 5,
-  },
-  parkMarkerIcon: {
-    width: 40,
-    height: 40,
-  },
-  zoneMenuButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    backgroundColor: '#CEECF5',
-    borderRadius: 30,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    elevation: 5,
-  },
-  zoneMenuButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  buttonImage: { width: 40, height: 40 },
   menu: {
-    position: 'absolute',
-    top: 100,
-    left: 20,
-    backgroundColor: '#fff',
-    borderRadius: 5,
-    padding: 10,
-    elevation: 5,
+    position: 'absolute', top: 120, right: 20,
+    backgroundColor: '#fff', padding: 10, borderRadius: 5,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5, shadowRadius: 2, elevation: 5,
   },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 5,
+  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 5 },
+  menuToggleButton: {
+    position: 'absolute', top: 70, right: 20,
+    backgroundColor: '#1E90FF', padding: 10, borderRadius: 5,
   },
-  checkbox: {
-    marginRight: 10,
-  },
-  menuText: {
-    fontSize: 16,
-    color: '#000',
-  },
+  menuToggleButtonText: { color: '#fff', fontSize: 16 },
+  checkbox: { marginRight: 10 },
+  menuText: { fontSize: 16 },
 });

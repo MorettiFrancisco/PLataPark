@@ -1,3 +1,4 @@
+import { isPointInPolygon } from 'geolib';
 import zonas from '../../constants/ParkingZones/zonas';
 
 type LatLng = { latitude: number; longitude: number };
@@ -36,23 +37,6 @@ function esHorarioValido(diasPermitidos: string[], horarioInicio: string, horari
 
   // Verifica si la hora actual está dentro del horario permitido
   return horaActual >= inicioEnMinutos && horaActual <= finEnMinutos;
-}
-
-function isPointInPolygon(point: LatLng, polygon: LatLng[]): boolean {
-  let inside = false;
-  const { latitude, longitude } = point;
-  
-  // Itera sobre cada lado del polígono
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const xi = polygon[i].latitude, yi = polygon[i].longitude;
-    const xj = polygon[j].latitude, yj = polygon[j].longitude;
-
-    // Verifica si el punto está dentro de la línea horizontal del polígono
-    const intersect = ((yi > longitude) !== (yj > longitude)) && 
-                      (latitude < (xj - xi) * (longitude - yi) / (yj - yi) + xi);
-    if (intersect) inside = !inside;
-  }
-  return inside;
 }
 
 // Función para verificar si una ubicación está dentro de una zona específica
