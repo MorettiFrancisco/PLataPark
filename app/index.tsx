@@ -2,15 +2,14 @@ import React, { useState, useEffect } from 'react';
 import MapView, { Marker, PROVIDER_GOOGLE, Polygon } from 'react-native-maps';
 import { StyleSheet, View, TouchableOpacity, Image, Alert, Text } from 'react-native';
 import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import zonas from '../constants/ParkingZones/zonas';
-import * as Notifications from 'expo-notifications';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { StackNavigationProp } from '@react-navigation/stack';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { isInZone } from './functions/parkingUtils';
-import messaging from '@react-native-firebase/messaging';
-import { StatusBar } from 'expo-status-bar';
+import { schedulePushNotification, cancelAllNotifications, cancelNotificationById } from './functions/notificationsUtils';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 type RootStackParamList = {
   ParkMarker: undefined;
@@ -30,7 +29,7 @@ interface Zona {
 type RouteParams = {
   carLatitude?: number;
   carLongitude?: number;
-  alarmData?: any; 
+  alarmData?: any;
   fromParkMarker?: boolean;
 };
 
@@ -40,74 +39,35 @@ const zonasPorHorario: { [horario: string]: Zona[] } = zonas.reduce((acc, zona) 
 }, {} as { [horario: string]: Zona[] });
 
 export default function App() {
-  
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [carLocation, setCarLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [permissionGranted, setPermissionGranted] = useState<boolean>(false);
   const [menuVisible, setMenuVisible] = useState<boolean>(false);
   const [visibilidadHorarios, setVisibilidadHorarios] = useState<{ [horario: string]: boolean }>({});
-  const [alarmActive, setAlarmActive] = useState<boolean>(false);  
+  const [showDatePicker, setShowDatePicker] = useState(false); // Mostrar el DateTimePicker
+  const [selectedTime, setSelectedTime] = useState<Date | undefined>(undefined); // Hora seleccionada
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
-  const [showPicker, setShowPicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-
-  const requestUserPermission = async () => {
-    const authStatus = await messaging().requestPermission();
-    const enabled =
-      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-    
-    if (enabled) {
-      console.log('Authorization status:', authStatus);
-    }
-    
-    return enabled;  
-  };
   
   useEffect(() => {
-    
-    const checkPermissionAndGetToken = async () => {
-      const isPermissionGranted = await requestUserPermission();
-      
-      if (isPermissionGranted) {
-        messaging()
-          .getToken()
-          .then((token) => {
-            console.log('Token del dispositivo:', token);
-          });
-      } else {
-        console.log('No se pudo obtener el token del dispositivo.');
+    const getPermission = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso de localización', 'Necesitamos permiso para acceder a tu localización');
       }
-  
-      messaging()
-        .getInitialNotification()
-        .then(async (remoteMessage) => {
-          if (remoteMessage) {
-            console.log('Notificación inicial:', remoteMessage.notification);
-          }
-        });
-  
-      messaging().onNotificationOpenedApp((remoteMessage) => {
-        console.log('Notificación abierta en la app:', remoteMessage.notification);
-      });
-  
-      messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-        console.log('Notificación recibida en segundo plano:', remoteMessage.notification);
-      });
-  
-      const unsubscribe = messaging().onMessage(async (remoteMessage) => {
-        Alert.alert('A new FCM message arrived!', JSON.stringify(remoteMessage));
-      });
-  
-      return unsubscribe;  
     };
-  
-  
-    checkPermissionAndGetToken();
-  
-  }, []); 
-  
+
+    getPermission();
+  }, []);
+
+  useEffect(() => {
+    const getLocation = async () => {
+      const location = await Location.getCurrentPositionAsync();
+      setLocation(location);
+    };
+
+    getLocation();
+  }, []);
+
   const toggleHorarioVisibility = (horario: string) => {
     setVisibilidadHorarios((prevState) => ({
       ...prevState,
@@ -115,56 +75,69 @@ export default function App() {
     }));
   };
 
-  const handleExtendTime = () => {
-    if (!location) {
-      Alert.alert("Ubicación no disponible", "No se pudo obtener la ubicación actual.");
-      return;
-    }
-    const zonaActual = isInZone(location.coords.latitude, location.coords.longitude);
-    if (!zonaActual) {
-      Alert.alert("Fuera de zona", "No estás en una zona definida para configurar una alarma.");
-      return;
-    }
+  // Manejar la respuesta de la notificación
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response: Notifications.NotificationResponse) => {
+        cancelAllNotifications(); 
 
-    setShowPicker(true);
-  };
+       
+        Alert.alert(
+          'La alarma que usted fijó para las: ' + response.notification.request.content.title + ' ha sido activada.',
+          '¿Qué te gustaría hacer?',
+          [
+            {
+              text: 'Ser redirigido a la aplicación SEM para cortar el débito',
+              onPress: () => {
+                console.log('Redirigiendo a otra app...');
+              },
+            },
+            {
+              text: 'Posponer alarma',
+              onPress: () => {
+                setShowDatePicker(true); // Mostrar el DateTimePicker
+              },
+            },
+          ]
+        );
+      }
+    );
 
-  const handleTimeChange = async (event: any, date?: Date) => {
-    setShowPicker(false);
-    if (event.type === 'set' && date) {
-      if (!location) {
-        Alert.alert("Ubicación no disponible", "No se pudo obtener la ubicación actual.");
-        return;
-      }
-      const zonaActual = isInZone(location.coords.latitude, location.coords.longitude);
-      if (!zonaActual) {
-        Alert.alert("Fuera de zona", "No estás en una zona definida para configurar una alarma.");
-        return;
-      }
-  
-      const [hora, minuto] = zonaActual.horarioFin.split(":").map(Number);
+    return () => subscription.remove();
+  }, []);
+
+  const handleTimeChange = async (event: any, selectedDate: Date | undefined) => {
+    const location = await Location.getCurrentPositionAsync({});
+    const { latitude, longitude } = location.coords;
+    const zona = isInZone(latitude, longitude);
+    if (zona) {
+      const [hora, minuto] = zona.horarioFin.split(":").map(Number);
       const maxTime = new Date();
       maxTime.setHours(hora, minuto, 0, 0);
-  
-      if (date <= maxTime) {
-        setSelectedDate(date);
-        await actualizarAlarma(date); // Cambiado a date para guardar la alarma personalizada
-      } else {
-        Alert.alert("Hora inválida", "La hora seleccionada supera el horario permitido de la zona.");
-      }
+      setShowDatePicker(false);
+      if (selectedDate && selectedDate <= maxTime)  {
+        setSelectedTime(selectedDate);
+        cancelAllNotifications(); 
+        schedulePushNotification(selectedDate);
     }
+    } else {
+      Alert.alert("Zona libre", "La ubicación es libre para estacionar.");
+    }
+    
   };
 
-  const actualizarAlarma = async (fechaSeleccionada: Date) => {
-    const timeUntilAlarm = fechaSeleccionada.getTime() - Date.now();
-  
-    if (timeUntilAlarm < 0) {
-      Alert.alert("Hora inválida", "La hora seleccionada ya pasó. Por favor, seleccione una hora futura.");
-      return;
-    }
-  
-    console.log("Notificación configurada a través de Firebase HTTP v1.");
+  const showDatePickerModal = () => {
+    setShowDatePicker(true);
   };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const { carLatitude, carLongitude, fromParkMarker } = route.params || {};
+      if (typeof carLatitude === 'number' && typeof carLongitude === 'number') {
+        setCarLocation({ latitude: carLatitude, longitude: carLongitude });
+      }
+    }, [route.params])
+  );
 
   const renderMenu = () => (
     <View style={styles.menu}>
@@ -181,57 +154,6 @@ export default function App() {
       ))}
     </View>
   );
-
-  useFocusEffect(
-    React.useCallback(() => {
-      const { carLatitude, carLongitude, fromParkMarker } = route.params || {};
-      if (typeof carLatitude === 'number' && typeof carLongitude === 'number') {
-        setCarLocation({ latitude: carLatitude, longitude: carLongitude });
-      }
-      if (route.params?.alarmData) {
-        setAlarmActive(true);  
-      }
-      if (alarmActive && !fromParkMarker) {
-        cancelNotification();
-      }
-    }, [route.params, alarmActive])
-  );
-
-  const cancelNotification = async () => {
-    if (!alarmActive) return;
-  
-    Alert.alert(
-      "Bienvenido de nuevo",
-      "¿Quiere ser redirigido para cancelar el débito de su estacionamiento?",
-      [
-        {
-          text: "Sí, redirigir",
-          onPress: async () => {
-            await Notifications.cancelAllScheduledNotificationsAsync();
-            setAlarmActive(false);
-          },
-        },
-        {
-          text: "No, extender tiempo",
-          onPress: handleExtendTime,
-        },
-      ]
-    );
-  };
-
-  useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      setPermissionGranted(status === 'granted');
-      if (status !== 'granted') {
-        Alert.alert('Permiso denegado', 'Necesitas conceder permisos de localización para usar esta funcionalidad.');
-      } else {
-        const locationData = await Location.getCurrentPositionAsync({});
-        setLocation(locationData);
-        console.log(locationData); // Verifica que se está obteniendo la ubicación
-      }
-    })();
-  }, []);
 
   if (!location) return null;
 
@@ -274,8 +196,6 @@ export default function App() {
                   key={index}
                   coordinates={zona.coordenadas}
                   fillColor={zona.color}
-                  strokeColor="#FF0000"
-                  strokeWidth={2}
                 />
               ))
             : null
@@ -291,12 +211,12 @@ export default function App() {
         <Text style={styles.zoneMenuButtonText}>{menuVisible ? 'Cerrar menú' : 'Menú de zonas'}</Text>
       </TouchableOpacity>
       {menuVisible && renderMenu()}
-      <StatusBar style="auto" />
-      {showPicker && (
+
+      {showDatePicker && (
         <DateTimePicker
+          value={selectedTime || new Date()}
           mode="time"
           display="default"
-          value={selectedDate || new Date()}
           onChange={handleTimeChange}
         />
       )}
@@ -305,64 +225,29 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  map: {
-    width: '100%',
-    height: '100%',
-  },
-  parkMarkerButton: {
-    position: 'absolute',
-    bottom: 80,
-    right: 20,
-    backgroundColor: '#CEECF5',
-    borderRadius: 30,
-    padding: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 5,
-  },
-  parkMarkerIcon: {
-    width: 40,
-    height: 40,
-  },
+  container: { flex: 1 },
+  map: { width: '100%', height: '100%' },
+  parkMarkerButton: { position: 'absolute', bottom: 100, right: 20, padding: 10 },
+  parkMarkerIcon: { width: 40, height: 40 },
   zoneMenuButton: {
     position: 'absolute',
     top: 50,
-    left: 20,
-    backgroundColor: '#CEECF5',
-    borderRadius: 30,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    elevation: 5,
+    right: 10,
+    padding: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 5,
   },
-  zoneMenuButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  zoneMenuButtonText: { color: '#fff' },
   menu: {
     position: 'absolute',
     top: 100,
-    left: 20,
-    backgroundColor: '#fff',
+    right: 10,
+    backgroundColor: 'white',
+    padding: 20,
     borderRadius: 5,
-    padding: 10,
-    elevation: 5,
+    boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
   },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  checkbox: {
-    marginRight: 10,
-  },
-  menuText: {
-    fontSize: 16,
-    color: '#000',
-  },
+  menuItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  checkbox: { marginRight: 10 },
+  menuText: { fontSize: 16 },
 });

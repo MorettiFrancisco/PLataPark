@@ -5,7 +5,7 @@ import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../components/routes/types';
 import { isInZone } from './functions/parkingUtils';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { schedulePushNotification } from './functions/notificationsUtils';  
+import { schedulePushNotification } from './functions/notificationsUtils';
 
 const ParkMarker = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -70,11 +70,13 @@ const ParkMarker = () => {
       return;
     }
   
-   
+
     const notificationId = await schedulePushNotification(selectedTime);
     console.log("Notificación programada con ID: ", notificationId);
   
-    setNotificationId(notificationId); // Guardamos el ID de la notificación para futuras cancelaciones
+    if (notificationId) {
+      setNotificationId(notificationId); 
+    }
     setIsAlarmSet(true);
   };
 
@@ -83,7 +85,7 @@ const ParkMarker = () => {
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
   
-      // Usa `notificationId` que ahora está en el estado
+   
       const alarmData = isAlarmSet ? { notificationId } : null;
   
       navigation.navigate('index', {
