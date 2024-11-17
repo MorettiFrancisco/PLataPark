@@ -159,7 +159,6 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-    <LuncherSEM/>
       <MapView
         style={styles.map}
         provider={PROVIDER_GOOGLE}
