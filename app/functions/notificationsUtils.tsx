@@ -5,13 +5,11 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 // Función para programar una notificación
 export const schedulePushNotification = async (date: Date) => {
   try {
-    // Cálculo del tiempo hasta la alarma
     const timeUntilAlarm = (date.getTime() - Date.now()) / 1000;
 
-    // Si el tiempo hasta la alarma es negativo, significa que ya ha pasado el tiempo
     if (timeUntilAlarm <= 0) {
       Alert.alert('Error', 'La hora seleccionada ya ha pasado.');
-      return;
+      return null;
     }
 
     // Programar la notificación
@@ -44,45 +42,7 @@ export const cancelAllNotifications = async () => {
   }
 };
 
-// Función para cancelar una notificación específica por ID
-export const cancelNotificationById = async (notificationId: string) => {
-  try {
-    await Notifications.cancelScheduledNotificationAsync(notificationId);
-    console.log(`Notificación ${notificationId} cancelada.`);
-  } catch (error) {
-    console.error(`Error al cancelar la notificación ${notificationId}:`, error);
-  }
-};
-
-// Función para obtener el token de notificación (si lo necesitas)
-export const getPushNotificationToken = async () => {
-  try {
-    const token = await Notifications.getExpoPushTokenAsync();
-    console.log('Token de notificación push:', token.data);
-    return token.data;
-  } catch (error) {
-    console.error('Error al obtener el token de notificación:', error);
-  }
-};
-
-// Función para manejar el recibo de notificaciones (en primer plano)
-export const handleNotificationReceived = (notification: Notifications.Notification) => {
-  console.log('Notificación recibida:', notification);
-  // Puedes personalizar aquí cómo quieres manejar la notificación recibida
-};
-
-// Función para manejar la acción de una notificación (cuando el usuario interactúa)
-export const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
-  console.log('Respuesta de notificación:', response);
-  // Aquí podrías navegar a una pantalla específica o realizar alguna acción
-};
-
-// Se podría suscribir a los eventos de notificación dentro de un hook useEffect (en el componente principal)
-export const subscribeToNotificationEvents = () => {
-  Notifications.addNotificationReceivedListener(handleNotificationReceived);
-  Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
-};
-
+// Función para manejar el cambio de hora y la validación
 export const handleTimeChange = (
   event: any,
   selectedDate: Date | undefined,
@@ -105,11 +65,25 @@ export const handleTimeChange = (
   }
 };
 
+// Función para configurar la alarma y evitar duplicados
 export const configureAlarm = async (
   selectedTime: Date,
   setNotificationId: (id: string) => void,
-  setIsAlarmSet: (value: boolean) => void
+  setIsAlarmSet: (value: boolean) => void,
+  isAlarmSet: boolean, // Comprobamos si ya está configurada la alarma
+  notificationId: string // Se pasa el ID de la notificación si existe
 ) => {
+  if (isAlarmSet) {
+    Alert.alert("Alarma ya configurada", "La alarma ya está configurada.");
+    return;
+  }
+
+  // Verifica si ya existe una notificación con el mismo ID antes de crear una nueva
+  if (notificationId) {
+    console.log(`Ya existe una notificación con el ID: ${notificationId}`);
+    return;
+  }
+
   const timeUntilAlarm = selectedTime.getTime() - Date.now();
   
   if (timeUntilAlarm < 0) {
@@ -117,15 +91,16 @@ export const configureAlarm = async (
     return;
   }
 
-  const notificationId = await schedulePushNotification(selectedTime);
-  console.log("Notificación programada con ID: ", notificationId);
+  const newNotificationId = await schedulePushNotification(selectedTime);
+  console.log("Notificación programada con ID: ", newNotificationId);
 
-  if (notificationId) {
-    setNotificationId(notificationId); // Guardamos el ID de la notificación para futuras cancelaciones
+  if (newNotificationId) {
+    setNotificationId(newNotificationId); // Guardamos el ID de la notificación para futuras cancelaciones
+    setIsAlarmSet(true); // Marcamos la alarma como configurada
   }
-  setIsAlarmSet(true);
 };
 
+// Función para mostrar el picker de hora
 export const showTimePicker = (setShowPicker: (value: boolean) => void) => {
   setShowPicker(true);
 };

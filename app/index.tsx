@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import MapView, { Marker, PROVIDER_GOOGLE, Polygon } from 'react-native-maps';
-import { StyleSheet, View, TouchableOpacity, Image, Alert, Text } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Image, Alert, Text, Button } from 'react-native';
+import MapViewDirections from 'react-native-maps-directions';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -8,8 +9,9 @@ import zonas from '../constants/ParkingZones/zonas';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { isInZone } from './functions/parkingUtils';
-import { schedulePushNotification, cancelAllNotifications, cancelNotificationById } from './functions/notificationsUtils';
+import { schedulePushNotification, cancelAllNotifications } from './functions/notificationsUtils';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { openSEMApp } from './functions/LuncherSEM';
 
 type RootStackParamList = {
   ParkMarker: undefined;
@@ -47,7 +49,17 @@ export default function App() {
   const [selectedTime, setSelectedTime] = useState<Date | undefined>(undefined); // Hora seleccionada
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
+  const subscription = useRef<{ remove: () => void } | null>(null);
+  const notificationHandled = useRef(false);
   
+  // Usar useRef para guardar si ya se abrió SEM
+  const semAppOpened = useRef(false);
+
+  const handleLaunchSEM = () => {
+    // Aquí llamamos a la función openSEMApp cuando se presiona el botón
+    openSEMApp();
+  };
+
   useEffect(() => {
     const getPermission = async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -75,35 +87,44 @@ export default function App() {
     }));
   };
 
-  // Manejar la respuesta de la notificación
   useEffect(() => {
-    const subscription = Notifications.addNotificationResponseReceivedListener(
-      (response: Notifications.NotificationResponse) => {
-        cancelAllNotifications(); 
+    // Aseguramos que la suscripción se haga una vez
+    if (subscription.current === null) {
+      subscription.current = Notifications.addNotificationResponseReceivedListener(
+        (response) => {
+          if (!notificationHandled.current) {
+            notificationHandled.current = true;
+            cancelAllNotifications();
+            Alert.alert(
+              'La alarma que usted fijó ha sido activada.',
+              '¿Qué te gustaría hacer?',
+              [
+                {
+                  text: 'Terminar Estacionamiento',
+                  onPress: () => {
+                    openSEMApp();
+                  },
+                },
+                {
+                  text: 'Posponer alarma',
+                  onPress: () => {
+                    setShowDatePicker(true);
+                  },
+                },
+              ]
+            );
+          }
+        }
+      );
+    }
 
-       
-        Alert.alert(
-          'La alarma que usted fijó para las: ' + response.notification.request.content.title + ' ha sido activada.',
-          '¿Qué te gustaría hacer?',
-          [
-            {
-              text: 'Ser redirigido a la aplicación SEM para cortar el débito',
-              onPress: () => {
-                console.log('Redirigiendo a otra app...');
-              },
-            },
-            {
-              text: 'Posponer alarma',
-              onPress: () => {
-                setShowDatePicker(true); // Mostrar el DateTimePicker
-              },
-            },
-          ]
-        );
+    // Limpiar la suscripción cuando el componente se desmonte
+    return () => {
+      if (subscription.current) {
+        subscription.current.remove();
+        subscription.current = null;
       }
-    );
-
-    return () => subscription.remove();
+    };
   }, []);
 
   const handleTimeChange = async (event: any, selectedDate: Date | undefined) => {
@@ -115,16 +136,17 @@ export default function App() {
       const maxTime = new Date();
       maxTime.setHours(hora, minuto, 0, 0);
       setShowDatePicker(false);
-      if (selectedDate && selectedDate <= maxTime)  {
+      if (selectedDate && selectedDate <= maxTime) {
         setSelectedTime(selectedDate);
-        cancelAllNotifications(); 
-        schedulePushNotification(selectedDate);
-    }
+        cancelAllNotifications(); // Cancelar notificaciones antes de programar nuevas
+        schedulePushNotification(selectedDate); // Programar la nueva notificación
+      }
     } else {
       Alert.alert("Zona libre", "La ubicación es libre para estacionar.");
     }
-    
   };
+
+  
 
   const showDatePickerModal = () => {
     setShowDatePicker(true);
@@ -135,6 +157,10 @@ export default function App() {
       const { carLatitude, carLongitude, fromParkMarker } = route.params || {};
       if (typeof carLatitude === 'number' && typeof carLongitude === 'number') {
         setCarLocation({ latitude: carLatitude, longitude: carLongitude });
+        if (!semAppOpened.current) {
+          openSEMApp();
+          semAppOpened.current = true; // Marcar que ya se ha abierto SEM
+        }
       }
     }, [route.params])
   );
@@ -185,9 +211,12 @@ export default function App() {
             coordinate={{
               latitude: carLocation.latitude,
               longitude: carLocation.longitude,
+              
             }}
+            image={require('../assets/images/LocationMarker.png')}
             title="Mi coche"
           />
+          
         )}
         {Object.entries(zonasPorHorario).map(([horario, zonas]) =>
           visibilidadHorarios[horario]
@@ -201,6 +230,7 @@ export default function App() {
             : null
         )}
       </MapView>
+
       <TouchableOpacity style={styles.parkMarkerButton} onPress={() => navigation.navigate('ParkMarker')}>
         <Image
           source={require('../assets/images/LocationMarker.png')}

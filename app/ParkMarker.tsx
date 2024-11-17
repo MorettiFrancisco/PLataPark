@@ -45,24 +45,13 @@ const ParkMarker = () => {
     fetchLocationAndCheckZone();
   }, []);
 
-  const handleTimeChange = (event: any, selectedDate: Date | undefined) => {
-    if (!zonaInfo) return;
-
-    const [hora, minuto] = zonaInfo.horarioFin.split(":").map(Number);
-    const maxTime = new Date();
-    maxTime.setHours(hora, minuto, 0, 0);
-
-    setShowPicker(false);
-
-    if (selectedDate && selectedDate <= maxTime) {
-      setSelectedTime(selectedDate);
-      configureAlarm(selectedDate);  
-    } else {
-      Alert.alert("Hora inválida", "La hora seleccionada no es válida.");
-    }
-  };
-
   const configureAlarm = async (selectedTime: Date) => {
+    // Si la alarma ya está configurada, no hacemos nada
+    if (isAlarmSet) {
+      console.log("La alarma ya está configurada.");
+      return;
+    }
+  
     const timeUntilAlarm = selectedTime.getTime() - Date.now();
   
     if (timeUntilAlarm < 0) {
@@ -70,14 +59,32 @@ const ParkMarker = () => {
       return;
     }
   
-
+    // Solo programar la notificación si no está configurada
     const notificationId = await schedulePushNotification(selectedTime);
     console.log("Notificación programada con ID: ", notificationId);
   
     if (notificationId) {
-      setNotificationId(notificationId); 
+      setNotificationId(notificationId); // Guardamos el ID de la notificación para futuras cancelaciones
+      setIsAlarmSet(true); // Marcamos la alarma como configurada
     }
-    setIsAlarmSet(true);
+  };
+  
+  const handleTimeChange = (event: any, selectedDate: Date | undefined) => {
+    if (!zonaInfo) return;
+  
+    const [hora, minuto] = zonaInfo.horarioFin.split(":").map(Number);
+    const maxTime = new Date();
+    maxTime.setHours(hora, minuto, 0, 0);
+  
+    setShowPicker(false);
+  
+    // Solo configurar la alarma si la hora seleccionada es válida
+    if (selectedDate && selectedDate <= maxTime && selectedDate.getTime() > Date.now()) {
+      setSelectedTime(selectedDate);
+      configureAlarm(selectedDate);  
+    } else {
+      Alert.alert("Hora inválida", "La hora seleccionada no es válida.");
+    }
   };
 
   const handleSaveLocation = async () => {
