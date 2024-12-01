@@ -154,10 +154,10 @@ export default function App() {
 
   useFocusEffect(
     React.useCallback(() => {
-      const { carLatitude, carLongitude, fromParkMarker } = route.params || {};
+      const { carLatitude, carLongitude, fromParkMarker, alarmData} = route.params || {};
       if (typeof carLatitude === 'number' && typeof carLongitude === 'number') {
         setCarLocation({ latitude: carLatitude, longitude: carLongitude });
-        if (!semAppOpened.current) {
+        if (!semAppOpened.current && alarmData) {
           openSEMApp();
           semAppOpened.current = true; // Marcar que ya se ha abierto SEM
         }

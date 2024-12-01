@@ -20,10 +20,10 @@ const ParkMarker = () => {
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
       const zona = isInZone(latitude, longitude);
-      
+  
       console.log("Zona detectada: ", zona);
       setZonaInfo(zona);
-
+  
       if (zona) {
         if (zona.mensaje === "No se puede estacionar en esta zona.") {
           Alert.alert("Advertencia", zona.mensaje);
@@ -40,6 +40,7 @@ const ParkMarker = () => {
       console.log("Error al obtener la ubicación: ", error);
     }
   };
+  
 
   useEffect(() => {
     fetchLocationAndCheckZone();
@@ -127,10 +128,16 @@ const ParkMarker = () => {
         </>
       )}
       {(zonaInfo?.mensaje === "Es un horario libre para estacionar." || isAlarmSet || zonaInfo === null) && (
-        <TouchableOpacity style={styles.roundButton} onPress={handleSaveLocation} disabled={!isAlarmSet}>
-          <Text style={styles.buttonText}>Guardar ubicación de mi coche</Text>
-        </TouchableOpacity>
-      )}
+       <TouchableOpacity
+       style={styles.roundButton}
+       onPress={handleSaveLocation}
+       disabled={!(zonaInfo?.mensaje === "Es un horario libre para estacionar." || isAlarmSet || zonaInfo === null)}
+     >
+       <Text style={styles.buttonText}>Guardar ubicación de mi coche</Text>
+     </TouchableOpacity>
+     
+     
+)}
     </View>
   );
 };
